@@ -220,30 +220,47 @@ app.get('/api/history', (req, res) => {
     else db.getHistory(mode, (data) => res.json(data));
 });
 
-// XML Exports
+// XML Export (Eingänge) - KORRIGIERT
 app.get('/api/loxone.xml', (req, res) => {
     const port = config.loxonePort;
     const title = config.mqttTopic || "Daikin_Bridge";
+    
     const cmds = [
-        { title: "WP Vorlauf Ist", check: "WP_VLT: \\v", unit: "°C", min: -50, max: 100 },
-        { title: "WP Aussen Temp", check: "WP_OutdoorTemp: \\v", unit: "°C", min: -50, max: 100 },
-        { title: "WP Innen Temp", check: "WP_IndoorTemp: \\v", unit: "°C", min: -50, max: 100 },
-        { title: "WP WW Temp", check: "WP_TankTemp: \\v", unit: "°C", min: -50, max: 100 },
-        { title: "WP WW Status", check: "WP_Power_WW: \\v", unit: "<v>", min: 0, max: 1 },
-        { title: "WP Heiz Status", check: "WP_Power_Heating: \\v", unit: "<v>", min: 0, max: 1 },
-        { title: "WP WW Turbo", check: "WP_Powerful_WW: \\v", unit: "<v>", min: 0, max: 1 },
-        { title: "WP Fehlercode", check: "WP_Error: \\v", unit: "<v>", min: 0, max: 1000 },
-        { title: "WP Kombi Modus", check: "WP_Mode: \\v", unit: "<v>", min: 0, max: 10 },
-        { title: "WP Soll VLT Heizen", check: "WP_TargetVLT_Heat: \\v", unit: "°C", min: 0, max: 100 },
-        { title: "WP Soll VLT Kuehlen", check: "WP_TargetVLT_Cool: \\v", unit: "°C", min: 0, max: 100 },
-        { title: "WP Soll WW Temp", check: "WP_TargetTemp_WW: \\v", unit: "°C", min: 0, max: 100 },
-        { title: "WP Offset Heizen", check: "WP_Offset_Heat: \\v", unit: "K", min: -10, max: 10 },
-        { title: "WP Offset Kuehlen", check: "WP_Offset_Cool: \\v", unit: "K", min: -10, max: 10 }
+        // --- SENSOREN (Mit <v.1> für 1 Nachkommastelle) ---
+        { title: "WP Vorlauf Ist", check: "WP_VLT: \\v", unit: "&lt;v.1&gt;°C", min: -50, max: 100 },
+        { title: "WP Aussen Temp", check: "WP_OutdoorTemp: \\v", unit: "&lt;v.1&gt;°C", min: -50, max: 100 },
+        { title: "WP Innen Temp", check: "WP_IndoorTemp: \\v", unit: "&lt;v.1&gt;°C", min: -50, max: 100 },
+        { title: "WP WW Ist Temp", check: "WP_TankTemp: \\v", unit: "&lt;v.1&gt;°C", min: -50, max: 100 },
+
+        // --- SOLLWERTE (Mit <v.1>) ---
+        { title: "WP Soll VLT Heizen", check: "WP_TargetVLT_Heat: \\v", unit: "&lt;v.1&gt;°C", min: 0, max: 100 },
+        { title: "WP Soll VLT Kuehlen", check: "WP_TargetVLT_Cool: \\v", unit: "&lt;v.1&gt;°C", min: 0, max: 100 },
+        { title: "WP Soll WW Temp", check: "WP_TargetTemp_WW: \\v", unit: "&lt;v.1&gt;°C", min: 0, max: 100 },
+
+        // --- OFFSETS (Mit <v.1>) ---
+        { title: "WP Offset Heizen", check: "WP_Offset_Heat: \\v", unit: "&lt;v.1&gt;K", min: -10, max: 10 },
+        { title: "WP Offset Kuehlen", check: "WP_Offset_Cool: \\v", unit: "&lt;v.1&gt;K", min: -10, max: 10 },
+
+        // --- STATUS (Digital/Integer - nur <v>) ---
+        { title: "WP WW Status", check: "WP_Power_WW: \\v", unit: "&lt;v&gt;", min: 0, max: 1 },
+        { title: "WP Heiz Status", check: "WP_Power_Heating: \\v", unit: "&lt;v&gt;", min: 0, max: 1 },
+        { title: "WP WW Turbo", check: "WP_Powerful_WW: \\v", unit: "&lt;v&gt;", min: 0, max: 1 },
+        { title: "WP Fehlercode", check: "WP_Error: \\v", unit: "&lt;v&gt;", min: 0, max: 1000 },
+        { title: "WP Kombi Modus", check: "WP_Mode: \\v", unit: "&lt;v&gt;", min: 0, max: 10 }
     ];
+
     let xml = `<?xml version="1.0" encoding="utf-8"?>\n<VirtualInUdp Title="${title}" Comment="" Address="" Port="${port}">\n\t<Info templateType="1" minVersion="16011106"/>\n`;
-    cmds.forEach(c => { xml += `\t<VirtualInUdpCmd Title="${c.title}" Comment="" Address="" Check="${c.check}" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="${c.min}" MaxVal="${c.max}" Unit="${c.unit}" HintText=""/>\n`; });
+    
+    cmds.forEach(c => { 
+        // Wichtig: Unit wird hier exakt so übernommen, wie oben definiert (mit &lt;v.1&gt;)
+        xml += `\t<VirtualInUdpCmd Title="${c.title}" Comment="" Address="" Check="${c.check}" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="${c.min}" MaxVal="${c.max}" Unit="${c.unit}" HintText=""/>\n`; 
+    });
+    
     xml += `</VirtualInUdp>`;
-    res.set('Content-Type', 'text/xml'); res.attachment('VIU_Daikin_Sensors.xml'); res.send(xml);
+    
+    res.set('Content-Type', 'text/xml'); 
+    res.attachment('VIU_Daikin_Sensors.xml'); 
+    res.send(xml);
 });
 
 app.get('/api/loxone_out.xml', (req, res) => {
@@ -263,4 +280,4 @@ app.get('/api/loxone_out.xml', (req, res) => {
 });
 
 server.listen(config.webPort, () => { console.log(`Bridge läuft auf http://localhost:${config.webPort}`); });
-daikin.connect();
+daikin.connect();	
