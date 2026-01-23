@@ -1,0 +1,12 @@
+{
+  "daikinIp": "192.168.1.XXX",
+  "loxoneIp": "192.168.1.XXX",
+  "loxonePort": 7888,
+  "webPort": 8666,
+  "udpKeepAlive": 90,
+  "convertTextToNum": true,
+  "mqttBroker": "mqtt://192.168.1.XXX",
+  "mqttTopic": "daikin",
+  "mqttUser": "optional_user",
+  "mqttPass": "optional_pass"
+}
