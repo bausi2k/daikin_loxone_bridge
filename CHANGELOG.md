@@ -2,6 +2,19 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.2.0] - 2026-01-23
+
+### ✨ Neu (Features)
+- **Persistentes Logging:** System-Logs werden nun in der SQLite-Datenbank (`system_logs`) gespeichert und gehen bei Neustarts nicht mehr verloren.
+- **Log Explorer:** Neuer Datepicker im "Logs"-Tab erlaubt das Abrufen historischer Protokolle.
+- **Lokalisierung:** Zeitstempel im UI verwenden nun das österreichische 24h-Format (`de-AT`).
+- **API:** Neuer Endpunkt `/api/logs?date=YYYY-MM-DD` zum Abrufen von Logdaten.
+
+### 🛠 Technik
+- **Datenbank:** Schema-Erweiterung um Tabelle `system_logs` mit Auto-Cleanup (Logs > 30 Tage werden gelöscht).
+- **Backend:** `sendLog` Helper schreibt nun synchron in DB und sendet WebSocket-Events.
+
+
 ## [1.1.0] - 2026-01-23
 
 ### ✨ Verbesserungen
