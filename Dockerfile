@@ -1,20 +1,26 @@
+# Basis Image: Klein und sicher
 FROM node:18-alpine
 
-# Zeitzone setzen (wichtig für korrekte Logs)
-RUN apk add --no-cache tzdata
-ENV TZ=Europe/Vienna
+# Metadaten
+LABEL org.opencontainers.image.source=https://github.com/bausi2k/daikin_loxone_bridge
+LABEL org.opencontainers.image.description="Daikin Altherma 3 Bridge to Loxone & MQTT"
+LABEL org.opencontainers.image.licenses=MIT
 
+# Arbeitsverzeichnis im Container
 WORKDIR /app
 
-# Erst package.json kopieren und installieren (Caching nutzen)
-COPY package.json ./
-RUN npm install
+# Zeitzone und SQLite Abhängigkeiten installieren (wichtig für Alpine Linux)
+RUN apk add --no-cache tzdata sqlite
 
-# Dann den Rest kopieren
+# Abhängigkeiten kopieren und installieren
+COPY package*.json ./
+RUN npm install --production
+
+# Restlichen Code kopieren
 COPY . .
 
-# Ports dokumentieren
-EXPOSE 3000
+# Port freigeben
+EXPOSE 8666
 
 # Startbefehl
 CMD ["node", "server.js"]

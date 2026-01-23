@@ -1,14 +1,18 @@
-version: '3'
+version: '3.8'
+
 services:
   daikin-bridge:
-    build: .
+    # Das Image von deiner GitHub Registry
+    image: ghcr.io/bausi2k/daikin_loxone_bridge:latest
     container_name: daikin-bridge
     restart: unless-stopped
-    # "host" Modus ist wichtig, damit UDP Pakete sauber an Loxone gehen
-    # und die IP-Adressen stimmen. Der Container nutzt direkt die IP des NAS.
+    
+    # WICHTIG: Host Mode für direkte UDP Kommunikation mit Loxone
     network_mode: host
-    volumes:
-      # Wir mappen die Config nach außen, damit sie Updates überlebt
-      - ./config.json:/app/config.json
+    
     environment:
       - TZ=Europe/Vienna
+    volumes:
+      # Nur Config und Datenbank persistieren
+      - ./config.json:/app/config.json
+      - ./history.db:/app/history.db
