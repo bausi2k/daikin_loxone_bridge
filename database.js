@@ -14,9 +14,15 @@ db.serialize(() => {
             vlt REAL, outdoor REAL, indoor REAL, tank REAL, target REAL
         )
     `);
+    
+    // --- NEU: Spalte für WW Status hinzufügen (falls nicht existent) ---
+    db.run("ALTER TABLE readings ADD COLUMN ww_active INTEGER DEFAULT 0", (err) => {
+        // Fehler wird ignoriert, falls Spalte schon existiert
+    });
+
     db.run(`CREATE INDEX IF NOT EXISTS idx_timestamp ON readings(timestamp)`);
 
-    // NEU: Logs Tabelle
+    // Logs Tabelle
     db.run(`
         CREATE TABLE IF NOT EXISTS system_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,14 +31,14 @@ db.serialize(() => {
             message TEXT
         )
     `);
-    // Index für schnelles Suchen nach Datum
     db.run(`CREATE INDEX IF NOT EXISTS idx_log_ts ON system_logs(timestamp)`);
 });
 
 // --- READINGS ---
 function saveReading(data) {
-    const stmt = db.prepare(`INSERT INTO readings (timestamp, vlt, outdoor, indoor, tank, target) VALUES (?, ?, ?, ?, ?, ?)`);
-    stmt.run(Date.now(), data.vlt, data.outdoor, data.indoor, data.tank, data.target);
+    // NEU: ww_active wird mitgespeichert
+    const stmt = db.prepare(`INSERT INTO readings (timestamp, vlt, outdoor, indoor, tank, target, ww_active) VALUES (?, ?, ?, ?, ?, ?, ?)`);
+    stmt.run(Date.now(), data.vlt, data.outdoor, data.indoor, data.tank, data.target, data.ww_active || 0);
     stmt.finalize();
 }
 
@@ -52,7 +58,8 @@ function getHistory(mode, callback) {
     const startOfYear = new Date(); startOfYear.setMonth(0, 1); startOfYear.setHours(0,0,0,0);
     const startOfLastYear = new Date(startOfYear); startOfLastYear.setFullYear(startOfLastYear.getFullYear() - 1);
 
-    const baseQuery = `SELECT timestamp, vlt, outdoor, indoor, tank, target FROM readings`;
+    // NEU: ww_active wird mit abgefragt
+    const baseQuery = `SELECT timestamp, vlt, outdoor, indoor, tank, target, ww_active FROM readings`;
 
     switch (mode) {
         case '24h':
@@ -98,9 +105,8 @@ function getComparison(mode, callback) {
     });
 }
 
-// --- NEU: LOGGING FUNKTIONEN ---
+// --- LOGGING FUNKTIONEN ---
 function saveLog(level, message) {
-    // Lösche Logs älter als 30 Tage (Housekeeping)
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
     db.run("DELETE FROM system_logs WHERE timestamp < ?", [thirtyDaysAgo]);
 
@@ -110,16 +116,13 @@ function saveLog(level, message) {
 }
 
 function getLogs(dateStr, callback) {
-    // dateStr erwartet Format "YYYY-MM-DD"
-    // Wenn leer, hole die letzten 100 Einträge
     if (!dateStr) {
         db.all("SELECT timestamp, level, message FROM system_logs ORDER BY timestamp DESC LIMIT 100", [], (err, rows) => {
-            if(err) callback([]); else callback(rows.reverse()); // Reverse damit Chronologie im Chat stimmt
+            if(err) callback([]); else callback(rows.reverse()); 
         });
         return;
     }
 
-    // Bestimmter Tag
     const start = new Date(dateStr); start.setHours(0,0,0,0);
     const end = new Date(dateStr); end.setHours(23,59,59,999);
 

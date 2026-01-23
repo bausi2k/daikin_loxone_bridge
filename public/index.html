@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS bleibt identisch wie vorher, nur ein Style für den Datepicker */
+        /* CSS bleibt identisch wie vorher */
         :root {
             --bg-base: #0b0d11;
             --surface: rgba(31, 33, 41, 0.7);
@@ -70,11 +70,8 @@
         .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; align-items: center; }
         .filter-pill { background: rgba(255,255,255,0.05); border: none; padding: 8px 16px; border-radius: 20px; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; white-space: nowrap; transition: 0.2s; }
         .filter-pill.active { background: var(--primary); color: var(--on-primary); font-weight: 600; }
-        
-        /* DATE PICKER */
         .date-input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 12px; border-radius: 12px; font-family: var(--font); margin-left: auto; width: auto; margin-top:0; }
         ::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
-
         input, select { width: 100%; padding: 16px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; font-family: var(--font); font-size: 1rem; margin-top: 8px; outline: none; transition: border 0.2s; }
         input:focus, select:focus { border-color: var(--primary); }
         .btn-primary { background: var(--primary); color: var(--on-primary); border: none; padding: 16px; border-radius: 50px; width: 100%; font-size: 1rem; font-weight: 600; margin-top: 20px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(168, 199, 250, 0.2); }
@@ -244,7 +241,7 @@
     <button class="b-nav-item active" onclick="switchTab('dashboard')"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Home</span></button>
     <button class="b-nav-item" onclick="switchTab('charts')"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg><span>Analytics</span></button>
     <button class="b-nav-item" onclick="switchTab('logs')"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg><span>Logs</span></button>
-    <button class="b-nav-item" onclick="switchTab('config')"><svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg><span>Setup</span></button>
+    <button class="b-nav-item" onclick="switchTab('config')"><svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5-3.5-1.57 3.5-3.5 3.5z"/></svg><span>Setup</span></button>
 </div>
 
 <script>
@@ -419,11 +416,37 @@
 
     function renderStandard(data) {
         const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+        
+        // --- NEU: Hintergrund Daten vorbereiten ---
+        const backgroundData = data.map(d => d.ww_active === 1 ? 1 : null);
+
         updateChart('vltChart', chartVLT, labels, [
             { label: 'Vorlauf Ist', data: data.map(d => d.vlt), borderColor: '#ffb74d', tension: 0.4 },
             { label: 'Soll', data: data.map(d => d.target), borderColor: '#ffcc80', borderDash: [5,5], tension: 0 }
         ], (c) => chartVLT = c);
-        updateChart('tankChart', chartTank, labels, [{ label: 'Warmwasser', data: data.map(d => d.tank), borderColor: '#6dd58c', tension: 0.4 }], (c) => chartTank = c);
+
+        // --- NEU: WW-Graph mit Hintergrund ---
+        updateChart('tankChart', chartTank, labels, [
+            { 
+                label: 'WW Aktiv', 
+                data: backgroundData, 
+                borderColor: 'transparent', 
+                backgroundColor: 'rgba(255, 0, 0, 0.2)', 
+                fill: true, 
+                radius: 0, 
+                stepped: true, 
+                yAxisID: 'y_status' 
+            },
+            { 
+                label: 'Warmwasser', 
+                data: data.map(d => d.tank), 
+                borderColor: '#6dd58c', 
+                backgroundColor: '#6dd58c', 
+                tension: 0.4, 
+                yAxisID: 'y' 
+            }
+        ], (c) => chartTank = c, true); // <--- Dual Axis Mode aktivieren
+
         updateChart('indoorChart', chartIndoor, labels, [{ label: 'Innen', data: data.map(d => d.indoor), borderColor: '#a8c7fa', tension: 0.4 }], (c) => chartIndoor = c);
         updateChart('outdoorChart', chartOutdoor, labels, [{ label: 'Außen', data: data.map(d => d.outdoor), borderColor: '#78d9f5', tension: 0.4 }], (c) => chartOutdoor = c);
     }
@@ -450,17 +473,41 @@
         ], (c) => chartOutdoor = c);
     }
 
-    function updateChart(id, chartInstance, labels, datasets, setInstanceCallback) {
+    // --- NEU: updateChart mit Dual-Axis Support ---
+    function updateChart(id, chartInstance, labels, datasets, setInstanceCallback, useDualAxis = false) {
         const ctx = document.getElementById(id).getContext('2d');
         if(chartInstance) chartInstance.destroy();
+
+        let scalesConfig = {
+            x: { ticks: { color: '#8e918f' }, grid: { color: '#2d2f38' } },
+            y: { ticks: { color: '#8e918f' }, grid: { color: '#2d2f38' } }
+        };
+
+        if (useDualAxis) {
+            scalesConfig.y_status = {
+                type: 'linear',
+                display: false,
+                position: 'right',
+                min: 0,
+                max: 1
+            };
+        }
+
         const newChart = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: datasets },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
                 interaction: { mode: 'index', intersect: false },
-                scales: { x: { ticks: { color: '#8e918f' }, grid: { color: '#2d2f38' } }, y: { ticks: { color: '#8e918f' }, grid: { color: '#2d2f38' } } }, 
-                plugins: { legend: { labels: { color: '#e2e2e6' } } },
+                scales: scalesConfig, 
+                plugins: { 
+                    legend: { 
+                        labels: { 
+                            color: '#e2e2e6',
+                            filter: function(item) { return item.text !== 'WW Aktiv'; }
+                        } 
+                    } 
+                },
                 elements: { point: { radius: 0, hitRadius: 10 } }
             }
         });

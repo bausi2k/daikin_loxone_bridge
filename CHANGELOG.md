@@ -2,6 +2,20 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+
+## [1.3.0] - 2026-01-23
+
+### ✨ Neu (Features)
+- **Erweiterte Visualisierung:** Im Warmwasser-Graphen wird nun durch eine rote Hintergrund-Schattierung angezeigt, wann die Warmwasser-Aufbereitung aktiv war.
+- **Datenbank-Upgrade:** Automatische Erweiterung der `readings` Tabelle um die Spalte `ww_active` (ohne Datenverlust).
+
+### 🛠 Technik
+- **Chart.js:** Implementierung einer Dual-Axis Logik, um Status-Bereiche (An/Aus) hinter die Temperaturkurven zu legen.
+- **Backend:** Erfassung des `Power_WW` Status im minütlichen Interval.
+
+## [1.2.0] - 2026-01-23
+... (restlicher Inhalt bleibt gleich)
+
 ## [1.2.0] - 2026-01-23
 
 ### ✨ Neu (Features)

@@ -61,10 +61,8 @@ function sendToLoxone(key, value) {
 // --- HELPER: LOGGING (DB & UI) ---
 function sendLog(msg, type = 'system') {
     const timestamp = Date.now();
-    
     // 1. In DB speichern
     db.saveLog(type, msg);
-
     // 2. An UI senden (Live)
     broadcastToUI('log', { timestamp, msg, type });
 }
@@ -108,12 +106,17 @@ connectMqtt();
 // --- PERIODIC TASKS ---
 setInterval(() => {
     if (!daikin.state.VLT) return;
+    
+    // NEU: Prüfen ob WW aktiv ist
+    const isWWActive = daikin.state.Power_WW === 'on' ? 1 : 0;
+
     const entry = {
         vlt: parseFloat(daikin.state.VLT || 0),
         outdoor: parseFloat(daikin.state.OutdoorTemp || 0),
         indoor: parseFloat(daikin.state.IndoorTemp || 0),
         tank: parseFloat(daikin.state.TankTemp || 0),
-        target: parseFloat(daikin.state.Mode === 'cooling' ? (daikin.state.TargetVLT_Cool||0) : (daikin.state.TargetVLT_Heat||0))
+        target: parseFloat(daikin.state.Mode === 'cooling' ? (daikin.state.TargetVLT_Cool||0) : (daikin.state.TargetVLT_Heat||0)),
+        ww_active: isWWActive // Speichern
     };
     db.saveReading(entry);
 }, 60000); 
@@ -170,8 +173,6 @@ daikin.on('update', (data) => {
     if (mqttConnected) mqttClient.publish(`${config.mqttTopic}/${data.key}`, String(data.value));
     broadcastToUI('state', daikin.state);
     
-    // Log nur in DB/UI, wenn es ein wichtiger Wert ist oder wir nicht spammen wollen
-    // Hier loggen wir alles, da DB es aushält (SQLite ist flink)
     sendLog(`${data.key}: ${data.value}`, 'input');
 
     if (data.key === 'Power_Heating' || data.key === 'Mode') {
@@ -230,7 +231,7 @@ app.get('/api/history', (req, res) => {
     else db.getHistory(mode, (data) => res.json(data));
 });
 
-// NEU: Log API
+// Logs API
 app.get('/api/logs', (req, res) => {
     const date = req.query.date; // YYYY-MM-DD
     db.getLogs(date, (data) => res.json(data));
@@ -273,7 +274,7 @@ app.get('/api/loxone_out.xml', (req, res) => {
         { title: "WP Set WW Soll", cmd: "/set?cmd=ww_temp&val=<v>", info: "Temperatur" }
     ];
     let xml = `<?xml version="1.0" encoding="utf-8"?>\n<VirtualOut Title="Daikin_Control" Comment="Auto-generated" Address="http://BRIDGE_IP:${config.webPort}" CmdInit="" HintText="" CloseAfterSend="true" CmdSep=";">\n\t<Info templateType="3" minVersion="16011106"/>\n`;
-    cmds.forEach(c => { xml += `\t<VirtualOutCmd Title="${c.title}" Comment="${c.info}" CmdOnMethod="GET" CmdOffMethod="GET" CmdOn="${c.cmd}" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" CmdAnswer="" HintText="" Analog="true" Repeat="0" RepeatRate="0" SourceValHigh="100" DestValHigh="100"/>\n`; });
+    cmds.forEach(c => { xml += `\t<VirtualOutCmd Title="${c.title}" Comment="${c.info}" CmdOnMethod="GET" CmdOnMethod="GET" CmdOn="${c.cmd}" CmdOnHTTP="" CmdOnPost="" CmdOff="" CmdOffHTTP="" CmdOffPost="" CmdAnswer="" HintText="" Analog="true" Repeat="0" RepeatRate="0" SourceValHigh="100" DestValHigh="100"/>\n`; });
     xml += `</VirtualOut>`;
     res.set('Content-Type', 'text/xml'); res.attachment('VO_Daikin_Control.xml'); res.send(xml);
 });
