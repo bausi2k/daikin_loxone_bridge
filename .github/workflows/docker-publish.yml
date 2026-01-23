@@ -31,17 +31,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+- name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            # Generiert Tags für Branches (z.B. main)
             type=ref,event=branch
+            # Generiert Tags für Pull Requests
             type=ref,event=pr
+            # Generiert SemVer Tags (v1.2.0, v1.2)
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_default_branch}}
+            # WICHTIG: Setzt 'latest' automatisch, wenn ein Tag gepusht wird!
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
