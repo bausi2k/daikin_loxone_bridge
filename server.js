@@ -40,7 +40,7 @@ const wss = new WebSocket.Server({ server });
 const daikin = new DaikinClient(config);
 const udpClient = dgram.createSocket('udp4');
 
-// --- HELPER ---
+// --- HELPER: UDP SENDEN ---
 function sendToLoxone(key, value) {
     let finalVal = value;
     if (config.convertTextToNum) {
@@ -58,12 +58,18 @@ function sendToLoxone(key, value) {
     });
 }
 
+// --- HELPER: LOGGING (DB & UI) ---
 function sendLog(msg, type = 'system') {
-    const time = new Date().toLocaleTimeString('de-DE');
-    broadcastToUI('log', { time, msg, type });
+    const timestamp = Date.now();
+    
+    // 1. In DB speichern
+    db.saveLog(type, msg);
+
+    // 2. An UI senden (Live)
+    broadcastToUI('log', { timestamp, msg, type });
 }
 
-// --- MQTT ---
+// --- MQTT SETUP ---
 let mqttClient = null;
 let mqttConnected = false; 
 
@@ -94,6 +100,8 @@ function connectMqtt() {
     });
 
     mqttClient.on('error', (err) => { console.error('[MQTT] Error:', err.message); });
+    
+    mqttClient.on('message', (topic, message) => {});
 }
 connectMqtt();
 
@@ -151,13 +159,19 @@ function broadcastMqttStatus() { broadcastToUI('mqtt_status', { connected: mqttC
 
 daikin.on('log', (logEntry) => {
     const type = logEntry.type === 'error' ? 'error' : 'system';
-    broadcastToUI('log', { ...logEntry, type });
+    // Speichern & Senden
+    const ts = Date.now();
+    db.saveLog(type, logEntry.msg);
+    broadcastToUI('log', { timestamp: ts, msg: logEntry.msg, type });
 });
 
 daikin.on('update', (data) => {
     sendToLoxone(data.key, data.value);
     if (mqttConnected) mqttClient.publish(`${config.mqttTopic}/${data.key}`, String(data.value));
     broadcastToUI('state', daikin.state);
+    
+    // Log nur in DB/UI, wenn es ein wichtiger Wert ist oder wir nicht spammen wollen
+    // Hier loggen wir alles, da DB es aushält (SQLite ist flink)
     sendLog(`${data.key}: ${data.value}`, 'input');
 
     if (data.key === 'Power_Heating' || data.key === 'Mode') {
@@ -204,11 +218,7 @@ app.get('/set', (req, res) => {
     daikin.executeCommand(cmd, val);
     sendLog(`${cmd} -> ${val}`, 'output');
     
-    // WICHTIG: Nach kurzer Zeit Refresh erzwingen, damit UI aktualisiert!
-    setTimeout(() => {
-        daikin.pollAll();
-    }, 1500); // 1.5s warten bis Daikin reagiert hat
-
+    setTimeout(() => { daikin.pollAll(); }, 1500); 
     res.send(`OK: ${cmd}=${val}`);
 });
 
@@ -220,47 +230,36 @@ app.get('/api/history', (req, res) => {
     else db.getHistory(mode, (data) => res.json(data));
 });
 
-// XML Export (Eingänge) - KORRIGIERT
+// NEU: Log API
+app.get('/api/logs', (req, res) => {
+    const date = req.query.date; // YYYY-MM-DD
+    db.getLogs(date, (data) => res.json(data));
+});
+
+// XML Export
 app.get('/api/loxone.xml', (req, res) => {
     const port = config.loxonePort;
     const title = config.mqttTopic || "Daikin_Bridge";
-    
     const cmds = [
-        // --- SENSOREN (Mit <v.1> für 1 Nachkommastelle) ---
         { title: "WP Vorlauf Ist", check: "WP_VLT: \\v", unit: "&lt;v.1&gt;°C", min: -50, max: 100 },
         { title: "WP Aussen Temp", check: "WP_OutdoorTemp: \\v", unit: "&lt;v.1&gt;°C", min: -50, max: 100 },
         { title: "WP Innen Temp", check: "WP_IndoorTemp: \\v", unit: "&lt;v.1&gt;°C", min: -50, max: 100 },
         { title: "WP WW Ist Temp", check: "WP_TankTemp: \\v", unit: "&lt;v.1&gt;°C", min: -50, max: 100 },
-
-        // --- SOLLWERTE (Mit <v.1>) ---
-        { title: "WP Soll VLT Heizen", check: "WP_TargetVLT_Heat: \\v", unit: "&lt;v.1&gt;°C", min: 0, max: 100 },
-        { title: "WP Soll VLT Kuehlen", check: "WP_TargetVLT_Cool: \\v", unit: "&lt;v.1&gt;°C", min: 0, max: 100 },
-        { title: "WP Soll WW Temp", check: "WP_TargetTemp_WW: \\v", unit: "&lt;v.1&gt;°C", min: 0, max: 100 },
-
-        // --- OFFSETS (Mit <v.1>) ---
-        { title: "WP Offset Heizen", check: "WP_Offset_Heat: \\v", unit: "&lt;v.1&gt;K", min: -10, max: 10 },
-        { title: "WP Offset Kuehlen", check: "WP_Offset_Cool: \\v", unit: "&lt;v.1&gt;K", min: -10, max: 10 },
-
-        // --- STATUS (Digital/Integer - nur <v>) ---
         { title: "WP WW Status", check: "WP_Power_WW: \\v", unit: "&lt;v&gt;", min: 0, max: 1 },
         { title: "WP Heiz Status", check: "WP_Power_Heating: \\v", unit: "&lt;v&gt;", min: 0, max: 1 },
         { title: "WP WW Turbo", check: "WP_Powerful_WW: \\v", unit: "&lt;v&gt;", min: 0, max: 1 },
         { title: "WP Fehlercode", check: "WP_Error: \\v", unit: "&lt;v&gt;", min: 0, max: 1000 },
-        { title: "WP Kombi Modus", check: "WP_Mode: \\v", unit: "&lt;v&gt;", min: 0, max: 10 }
+        { title: "WP Kombi Modus", check: "WP_Mode: \\v", unit: "&lt;v&gt;", min: 0, max: 10 },
+        { title: "WP Soll VLT Heizen", check: "WP_TargetVLT_Heat: \\v", unit: "&lt;v.1&gt;°C", min: 0, max: 100 },
+        { title: "WP Soll VLT Kuehlen", check: "WP_TargetVLT_Cool: \\v", unit: "&lt;v.1&gt;°C", min: 0, max: 100 },
+        { title: "WP Soll WW Temp", check: "WP_TargetTemp_WW: \\v", unit: "&lt;v.1&gt;°C", min: 0, max: 100 },
+        { title: "WP Offset Heizen", check: "WP_Offset_Heat: \\v", unit: "&lt;v.1&gt;K", min: -10, max: 10 },
+        { title: "WP Offset Kuehlen", check: "WP_Offset_Cool: \\v", unit: "&lt;v.1&gt;K", min: -10, max: 10 }
     ];
-
     let xml = `<?xml version="1.0" encoding="utf-8"?>\n<VirtualInUdp Title="${title}" Comment="" Address="" Port="${port}">\n\t<Info templateType="1" minVersion="16011106"/>\n`;
-    
-    cmds.forEach(c => { 
-        // Wichtig: Unit wird hier exakt so übernommen, wie oben definiert (mit &lt;v.1&gt;)
-        xml += `\t<VirtualInUdpCmd Title="${c.title}" Comment="" Address="" Check="${c.check}" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="${c.min}" MaxVal="${c.max}" Unit="${c.unit}" HintText=""/>\n`; 
-    });
-    
+    cmds.forEach(c => { xml += `\t<VirtualInUdpCmd Title="${c.title}" Comment="" Address="" Check="${c.check}" Signed="true" Analog="true" SourceValLow="0" DestValLow="0" SourceValHigh="100" DestValHigh="100" DefVal="0" MinVal="${c.min}" MaxVal="${c.max}" Unit="${c.unit}" HintText=""/>\n`; });
     xml += `</VirtualInUdp>`;
-    
-    res.set('Content-Type', 'text/xml'); 
-    res.attachment('VIU_Daikin_Sensors.xml'); 
-    res.send(xml);
+    res.set('Content-Type', 'text/xml'); res.attachment('VIU_Daikin_Sensors.xml'); res.send(xml);
 });
 
 app.get('/api/loxone_out.xml', (req, res) => {
@@ -280,4 +279,4 @@ app.get('/api/loxone_out.xml', (req, res) => {
 });
 
 server.listen(config.webPort, () => { console.log(`Bridge läuft auf http://localhost:${config.webPort}`); });
-daikin.connect();	
+daikin.connect();

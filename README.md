@@ -9,10 +9,11 @@ Eine moderne, leichtgewichtige Bridge, um **Daikin Altherma 3 Wärmepumpen** (ge
 
 ### Features
 * 🚀 **Echtzeit-Brücke:** Sendet Statusänderungen sofort per UDP an Loxone.
-* 📊 **Analytics Dashboard:** Integrierte Datenbank (SQLite) mit Diagrammen (Vorlauf, Warmwasser, Außen) und historischen Vergleichen (Heute vs. Gestern, Monatsvergleich).
+* 📊 **Analytics Dashboard:** Integrierte Datenbank (SQLite) mit Diagrammen.
+* 📜 **System Logging:** Persistente Logs mit Historie und Suchfunktion (Datepicker) direkt im UI.
 * 📱 **Modernes UI:** Responsive "Google Home"-Style Webinterface mit Dark Mode.
 * ⚡ **MQTT Support:** Volle Integration für Home Assistant, ioBroker, etc.
-* 🛠 **Auto-Config:** Generiert fertige XML-Vorlagen für den Loxone-Import (Virtuelle Ein- und Ausgänge).
+* 🛠 **Auto-Config:** Generiert fertige XML-Vorlagen für den Loxone-Import.
 
 ---
 
