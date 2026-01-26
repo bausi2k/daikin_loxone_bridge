@@ -158,7 +158,7 @@ startUdpHeartbeat();
 // --- WEBSOCKET ---
 wss.on('connection', (ws) => {
     if (Object.keys(daikin.state).length > 0) ws.send(JSON.stringify({ type: 'state', data: daikin.state }));
-    ws.send(JSON.stringify({ type: 'mqtt_status', connected: mqttConnected }));
+    ws.send(JSON.stringify({ type: 'mqtt_status', data: { connected: mqttConnected } }));
 });
 
 function broadcastToUI(type, data) {
