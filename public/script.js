@@ -24,12 +24,24 @@ function connectWS() {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const ws = new WebSocket(`${protocol}://${window.location.host}`);
     ws.onopen = () => { document.getElementById('connDot').classList.add('connected'); document.getElementById('connDotMobile').classList.add('connected'); };
-    ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'state') updateDashboard(msg.data);
-        if (msg.type === 'log') addLog(msg.data); // Live Logs
-        if (msg.type === 'mqtt_status') updateMqttStatus(msg.data.connected);
-    };
+	ws.onmessage = (event) => {
+	        try {
+	            const msg = JSON.parse(event.data);
+            
+	            if (msg.type === 'state') updateDashboard(msg.data);
+	            if (msg.type === 'log') addLog(msg.data); 
+            
+	            if (msg.type === 'mqtt_status') {
+	                // ROBUSTHEITS-FIX: Prüfe beide Formate (mit und ohne .data Wrapper)
+	                const isConnected = (msg.data && msg.data.connected !== undefined) 
+	                                    ? msg.data.connected 
+	                                    : msg.connected;
+	                updateMqttStatus(isConnected);
+	            }
+	        } catch (e) {
+	            console.warn("Fehler beim Verarbeiten der WebSocket-Nachricht:", e);
+	        }
+	    };
     ws.onclose = () => { document.getElementById('connDot').classList.remove('connected'); document.getElementById('connDotMobile').classList.remove('connected'); setTimeout(connectWS, 3000); };
 }
 connectWS();
