@@ -78,7 +78,7 @@ function updateDashboard(data) {
     setBtnState('btn-ww-off', data.Power_WW !== 'on', 'active-on');
     setBtnState('btn-turbo', parseInt(data.Powerful_WW || 0) === 1, 'active-turbo');
 
-    // --- NEU: Status Logik (Abweichung Ist vs. Soll) ---
+    // Status Logik (Abweichung Ist vs. Soll)
     const elStatus = document.getElementById('val-status');
     if (data.Power_Heating === 'on' && vltTarget !== '--') {
         const target = parseFloat(vltTarget);
@@ -99,7 +99,6 @@ function updateDashboard(data) {
         elStatus.innerText = "💤 Standby";
         elStatus.style.color = "var(--text-dim)";
     }
-    // ---------------------------------------------------
 
     const err = parseInt(data.Error || 0);
     document.getElementById('errorBanner').style.display = err !== 0 ? 'block' : 'none';
@@ -190,14 +189,28 @@ async function loadHistory() {
 function renderStandard(data) {
     const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
     const backgroundData = data.map(d => d.ww_active === 1 ? 1 : null);
+    
+    // NEU: Hintergrund für Heiz-Status
+    const heatingBackgroundData = data.map(d => d.heating_active === 1 ? 1 : null);
 
+    // NEU: vltChart mit Hintergrund
     updateChart('vltChart', chartVLT, labels, [
-        { label: 'Vorlauf Ist', data: data.map(d => d.vlt), borderColor: '#ffb74d', tension: 0.5 },
-        { label: 'Soll', data: data.map(d => d.target), borderColor: '#ffcc80', borderDash: [5,5], tension: 0 }
-    ], (c) => chartVLT = c);
+        { 
+            label: 'Heizung Aktiv', 
+            data: heatingBackgroundData, 
+            borderColor: 'transparent', 
+            backgroundColor: 'rgba(255, 183, 77, 0.2)', // Orange-Transparent
+            fill: true, 
+            radius: 0, 
+            stepped: true, 
+            yAxisID: 'y_status' 
+        },
+        { label: 'Vorlauf Ist', data: data.map(d => d.vlt), borderColor: '#ffb74d', tension: 0.5, yAxisID: 'y' },
+        { label: 'Soll', data: data.map(d => d.target), borderColor: '#ffcc80', borderDash: [5,5], tension: 0, yAxisID: 'y' }
+    ], (c) => chartVLT = c, true); // <--- Dual Axis Mode
 
     updateChart('tankChart', chartTank, labels, [
-        { label: 'WW Aktiv', data: backgroundData, borderColor: 'transparent', backgroundColor: 'rgba(255, 0, 0, 0.2)', fill: true, radius: 0, stepped: true, yAxisID: 'y_status' },
+        { label: 'WW Aktiv', data: backgroundData, borderColor: 'transparent', backgroundColor: 'rgba(109, 213, 140, 0.2)', fill: true, radius: 0, stepped: true, yAxisID: 'y_status' },
         { label: 'Warmwasser', data: data.map(d => d.tank), borderColor: '#6dd58c', backgroundColor: '#6dd58c', tension: 0.5, yAxisID: 'y' }
     ], (c) => chartTank = c, true);
 
@@ -251,7 +264,7 @@ function updateChart(id, chartInstance, labels, datasets, setInstanceCallback, u
                 legend: { 
                     labels: { 
                         color: '#e2e2e6',
-                        filter: function(item) { return item.text !== 'WW Aktiv'; }
+                        filter: function(item) { return item.text !== 'WW Aktiv' && item.text !== 'Heizung Aktiv'; }
                     } 
                 } 
             },

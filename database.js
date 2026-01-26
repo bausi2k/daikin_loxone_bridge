@@ -6,19 +6,21 @@ const dbPath = path.join(__dirname, 'history.db');
 const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
-    // Readings Tabelle (wie gehabt)
+    // Readings Tabelle
     db.run(`
         CREATE TABLE IF NOT EXISTS readings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp INTEGER,
-            vlt REAL, outdoor REAL, indoor REAL, tank REAL, target REAL
+            vlt REAL, outdoor REAL, indoor REAL, tank REAL, target REAL,
+            ww_active INTEGER DEFAULT 0
         )
     `);
     
-    // --- NEU: Spalte für WW Status hinzufügen (falls nicht existent) ---
-    db.run("ALTER TABLE readings ADD COLUMN ww_active INTEGER DEFAULT 0", (err) => {
-        // Fehler wird ignoriert, falls Spalte schon existiert
-    });
+    // Alte Spalte "ww_active" (falls noch nicht da - für Updates)
+    db.run("ALTER TABLE readings ADD COLUMN ww_active INTEGER DEFAULT 0", (err) => {});
+
+    // --- NEU: Spalte für Heiz-Status hinzufügen ---
+    db.run("ALTER TABLE readings ADD COLUMN heating_active INTEGER DEFAULT 0", (err) => {});
 
     db.run(`CREATE INDEX IF NOT EXISTS idx_timestamp ON readings(timestamp)`);
 
@@ -36,9 +38,9 @@ db.serialize(() => {
 
 // --- READINGS ---
 function saveReading(data) {
-    // NEU: ww_active wird mitgespeichert
-    const stmt = db.prepare(`INSERT INTO readings (timestamp, vlt, outdoor, indoor, tank, target, ww_active) VALUES (?, ?, ?, ?, ?, ?, ?)`);
-    stmt.run(Date.now(), data.vlt, data.outdoor, data.indoor, data.tank, data.target, data.ww_active || 0);
+    // NEU: heating_active wird mitgespeichert
+    const stmt = db.prepare(`INSERT INTO readings (timestamp, vlt, outdoor, indoor, tank, target, ww_active, heating_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    stmt.run(Date.now(), data.vlt, data.outdoor, data.indoor, data.tank, data.target, data.ww_active || 0, data.heating_active || 0);
     stmt.finalize();
 }
 
@@ -58,8 +60,8 @@ function getHistory(mode, callback) {
     const startOfYear = new Date(); startOfYear.setMonth(0, 1); startOfYear.setHours(0,0,0,0);
     const startOfLastYear = new Date(startOfYear); startOfLastYear.setFullYear(startOfLastYear.getFullYear() - 1);
 
-    // NEU: ww_active wird mit abgefragt
-    const baseQuery = `SELECT timestamp, vlt, outdoor, indoor, tank, target, ww_active FROM readings`;
+    // NEU: heating_active wird mit abgefragt
+    const baseQuery = `SELECT timestamp, vlt, outdoor, indoor, tank, target, ww_active, heating_active FROM readings`;
 
     switch (mode) {
         case '24h':

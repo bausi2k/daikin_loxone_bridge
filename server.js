@@ -88,7 +88,7 @@ function connectMqtt() {
         sendLog('MQTT Verbunden', 'system');
         mqttClient.subscribe(`${config.mqttTopic}/set/#`);
 
-        // --- NEU: Alle bekannten Werte sofort mit Retain senden ---
+        // Initiale Werte mit Retain senden
         if (daikin.state) {
             console.log('[MQTT] Sende kompletten Status (Retained)...');
             for (const [key, value] of Object.entries(daikin.state)) {
@@ -115,8 +115,9 @@ connectMqtt();
 setInterval(() => {
     if (!daikin.state.VLT) return;
     
-    // NEU: Prüfen ob WW aktiv ist
+    // Status für Warmwasser und HEIZUNG erfassen
     const isWWActive = daikin.state.Power_WW === 'on' ? 1 : 0;
+    const isHeatingActive = daikin.state.Power_Heating === 'on' ? 1 : 0; // NEU
 
     const entry = {
         vlt: parseFloat(daikin.state.VLT || 0),
@@ -124,7 +125,8 @@ setInterval(() => {
         indoor: parseFloat(daikin.state.IndoorTemp || 0),
         tank: parseFloat(daikin.state.TankTemp || 0),
         target: parseFloat(daikin.state.Mode === 'cooling' ? (daikin.state.TargetVLT_Cool||0) : (daikin.state.TargetVLT_Heat||0)),
-        ww_active: isWWActive // Speichern für Visualisierung
+        ww_active: isWWActive,
+        heating_active: isHeatingActive // NEU: Speichern
     };
     db.saveReading(entry);
 }, 60000); 
@@ -158,6 +160,8 @@ startUdpHeartbeat();
 // --- WEBSOCKET ---
 wss.on('connection', (ws) => {
     if (Object.keys(daikin.state).length > 0) ws.send(JSON.stringify({ type: 'state', data: daikin.state }));
+    
+    // Status korrekt senden
     ws.send(JSON.stringify({ type: 'mqtt_status', data: { connected: mqttConnected } }));
 });
 
@@ -170,7 +174,6 @@ function broadcastMqttStatus() { broadcastToUI('mqtt_status', { connected: mqttC
 
 daikin.on('log', (logEntry) => {
     const type = logEntry.type === 'error' ? 'error' : 'system';
-    // Speichern & Senden
     const ts = Date.now();
     db.saveLog(type, logEntry.msg);
     broadcastToUI('log', { timestamp: ts, msg: logEntry.msg, type });
@@ -179,13 +182,12 @@ daikin.on('log', (logEntry) => {
 daikin.on('update', (data) => {
     sendToLoxone(data.key, data.value);
     
-    // NEU: Retain Flag setzen für dauerhafte Speicherung im Broker
+    // Retain Flag für MQTT
     if (mqttConnected) {
         mqttClient.publish(`${config.mqttTopic}/${data.key}`, String(data.value), { retain: true });
     }
     
     broadcastToUI('state', daikin.state);
-    
     sendLog(`${data.key}: ${data.value}`, 'input');
 
     if (data.key === 'Power_Heating' || data.key === 'Mode') {
@@ -199,7 +201,6 @@ daikin.on('update', (data) => {
         }
         udpClient.send(Buffer.from(`WP_Mode: ${loxoneMode}`), config.loxonePort, config.loxoneIp);
         
-        // NEU: Auch den berechneten Modus retained senden
         if (mqttConnected) {
             mqttClient.publish(`${config.mqttTopic}/Mode_Int`, String(loxoneMode), { retain: true });
         }
@@ -248,9 +249,8 @@ app.get('/api/history', (req, res) => {
     else db.getHistory(mode, (data) => res.json(data));
 });
 
-// Logs API
 app.get('/api/logs', (req, res) => {
-    const date = req.query.date; // YYYY-MM-DD
+    const date = req.query.date; 
     db.getLogs(date, (data) => res.json(data));
 });
 
