@@ -87,6 +87,14 @@ function connectMqtt() {
         broadcastMqttStatus();
         sendLog('MQTT Verbunden', 'system');
         mqttClient.subscribe(`${config.mqttTopic}/set/#`);
+
+        // --- NEU: Alle bekannten Werte sofort mit Retain senden ---
+        if (daikin.state) {
+            console.log('[MQTT] Sende kompletten Status (Retained)...');
+            for (const [key, value] of Object.entries(daikin.state)) {
+                mqttClient.publish(`${config.mqttTopic}/${key}`, String(value), { retain: true });
+            }
+        }
     });
 
     mqttClient.on('close', () => {
@@ -116,7 +124,7 @@ setInterval(() => {
         indoor: parseFloat(daikin.state.IndoorTemp || 0),
         tank: parseFloat(daikin.state.TankTemp || 0),
         target: parseFloat(daikin.state.Mode === 'cooling' ? (daikin.state.TargetVLT_Cool||0) : (daikin.state.TargetVLT_Heat||0)),
-        ww_active: isWWActive // Speichern
+        ww_active: isWWActive // Speichern für Visualisierung
     };
     db.saveReading(entry);
 }, 60000); 
@@ -170,7 +178,12 @@ daikin.on('log', (logEntry) => {
 
 daikin.on('update', (data) => {
     sendToLoxone(data.key, data.value);
-    if (mqttConnected) mqttClient.publish(`${config.mqttTopic}/${data.key}`, String(data.value));
+    
+    // NEU: Retain Flag setzen für dauerhafte Speicherung im Broker
+    if (mqttConnected) {
+        mqttClient.publish(`${config.mqttTopic}/${data.key}`, String(data.value), { retain: true });
+    }
+    
     broadcastToUI('state', daikin.state);
     
     sendLog(`${data.key}: ${data.value}`, 'input');
@@ -185,7 +198,11 @@ daikin.on('update', (data) => {
             else if (mode === 'auto') loxoneMode = 3;
         }
         udpClient.send(Buffer.from(`WP_Mode: ${loxoneMode}`), config.loxonePort, config.loxoneIp);
-        if (mqttConnected) mqttClient.publish(`${config.mqttTopic}/Mode_Int`, String(loxoneMode));
+        
+        // NEU: Auch den berechneten Modus retained senden
+        if (mqttConnected) {
+            mqttClient.publish(`${config.mqttTopic}/Mode_Int`, String(loxoneMode), { retain: true });
+        }
     }
 });
 
