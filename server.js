@@ -8,6 +8,7 @@ const path = require('path');
 const mqtt = require('mqtt'); 
 const DaikinClient = require('./daikin'); 
 const db = require('./database'); 
+const packageJson = require('./package.json'); // <--- NEU
 
 // --- CONFIG LADEN ---
 const CONFIG_FILE = './config.json';

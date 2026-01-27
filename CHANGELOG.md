@@ -2,6 +2,15 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.3.1] - 2026-01-27
+### ✨ Neu
+- **Versions-Anzeige:** Die aktuelle Version wird nun in der Sidebar und im Setup-Tab angezeigt.
+- **Status-Info:** Neue Anzeige im Dashboard, ob die Wärmepumpe gerade aufheizt, abkühlt oder den Sollwert hält.
+
+### 🛠 Technik
+- **Code-Struktur:** Trennung von HTML, CSS und JavaScript für bessere Wartbarkeit (`script.js`, `style.css`).
+- **Bugfix:** Robustere Verarbeitung des MQTT-Verbindungsstatus im Frontend.
+- **Bugfix:** Favicon 404 Fehler behoben.
 
 ## [1.3.0] - 2026-01-23
 

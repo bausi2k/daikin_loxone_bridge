@@ -24,24 +24,24 @@ function connectWS() {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const ws = new WebSocket(`${protocol}://${window.location.host}`);
     ws.onopen = () => { document.getElementById('connDot').classList.add('connected'); document.getElementById('connDotMobile').classList.add('connected'); };
-	ws.onmessage = (event) => {
-	        try {
-	            const msg = JSON.parse(event.data);
+    ws.onmessage = (event) => {
+        try {
+            const msg = JSON.parse(event.data);
             
-	            if (msg.type === 'state') updateDashboard(msg.data);
-	            if (msg.type === 'log') addLog(msg.data); 
+            if (msg.type === 'state') updateDashboard(msg.data);
+            if (msg.type === 'log') addLog(msg.data); 
             
-	            if (msg.type === 'mqtt_status') {
-	                // ROBUSTHEITS-FIX: Prüfe beide Formate (mit und ohne .data Wrapper)
-	                const isConnected = (msg.data && msg.data.connected !== undefined) 
-	                                    ? msg.data.connected 
-	                                    : msg.connected;
-	                updateMqttStatus(isConnected);
-	            }
-	        } catch (e) {
-	            console.warn("Fehler beim Verarbeiten der WebSocket-Nachricht:", e);
-	        }
-	    };
+            if (msg.type === 'mqtt_status') {
+                // ROBUSTHEITS-FIX: Prüfe beide Formate
+                const isConnected = (msg.data && msg.data.connected !== undefined) 
+                                    ? msg.data.connected 
+                                    : msg.connected;
+                updateMqttStatus(isConnected);
+            }
+        } catch (e) {
+            console.warn("Fehler beim Verarbeiten der WebSocket-Nachricht:", e);
+        }
+    };
     ws.onclose = () => { document.getElementById('connDot').classList.remove('connected'); document.getElementById('connDotMobile').classList.remove('connected'); setTimeout(connectWS, 3000); };
 }
 connectWS();
@@ -290,6 +290,14 @@ async function loadConfig() {
     try {
         const res = await fetch('/api/config');
         const cfg = await res.json();
+        
+        // --- NEU: Version in alle Platzhalter schreiben ---
+        if (cfg.appVersion) {
+            document.querySelectorAll('.version-tag').forEach(el => {
+                el.innerText = cfg.appVersion;
+            });
+        }
+        
         document.getElementById('cfg-daikin').value = cfg.daikinIp || "";
         document.getElementById('cfg-loxone').value = cfg.loxoneIp || "";
         document.getElementById('cfg-port').value = cfg.loxonePort || 7000;
