@@ -9,6 +9,7 @@ const mqtt = require('mqtt');
 const DaikinClient = require('./daikin'); 
 const db = require('./database'); 
 
+// 1. NEU: Package.json laden für Version
 const packageJson = require('./package.json'); 
 
 // --- CONFIG LADEN ---
@@ -247,9 +248,10 @@ app.get('/api/history', (req, res) => {
     else db.getHistory(mode, (data) => res.json(data));
 });
 
-// NEU: Route für Daily Stats
-app.get('/api/stats/daily', (req, res) => {
-    db.getDailyStats((data) => res.json(data));
+// NEU: Route für flexible Stats
+app.get('/api/stats', (req, res) => {
+    const mode = req.query.mode || '14d';
+    db.getStats(mode, (data) => res.json(data));
 });
 
 app.get('/api/logs', (req, res) => {

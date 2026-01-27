@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.4.1] - 2026-01-27
+### ✨ Neu
+- **Langzeit-Statistiken:** Das "Betriebszeiten"-Chart bietet nun ein Dropdown-Menü für längere Zeiträume (30 Tage, 3 Monate, 6 Monate, 1 Jahr).
+- **Smarte Aggregation:** Bei Zeiträumen über 14 Tagen werden die Daten automatisch wochen- oder monatsweise zusammengefasst, um die Übersichtlichkeit zu wahren.
+
+### 🛠 Technik
+- **Datenbank:** Optimierte SQL-Queries für Wochen (`%W`) und Monats (`%m`) Gruppierung in SQLite.
+
 ## [1.4.0] - 2026-01-27
 
 ### ✨ Neu

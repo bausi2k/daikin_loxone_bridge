@@ -104,31 +104,40 @@ function getComparison(mode, callback) {
     });
 }
 
-// --- NEU: TÄGLICHE BETRIEBSSTATISTIK ---
-function getDailyStats(callback) {
-    // Wir gruppieren nach Tag (YYYY-MM-DD).
-    // SUM(ww_active) = Minuten WW Betrieb (da 1 Eintrag pro Minute)
-    // AVG(...) = Durchschnitts-VLT, aber NUR wenn die Heizung lief!
+// --- NEU: FLEXIBLE STATISTIK (Tag/Woche/Monat) ---
+function getStats(mode, callback) {
+    let limit = 14;
+    let format = '%Y-%m-%d'; // Standard: Täglich
+
+    // Modi definieren
+    switch(mode) {
+        case '30d': limit = 30; break;                 // 30 Tage (Täglich)
+        case '3m':  limit = 13; format = '%Y-W%W'; break; // 3 Monate -> ~13 Wochen
+        case '6m':  limit = 26; format = '%Y-W%W'; break; // 6 Monate -> ~26 Wochen
+        case '12m': limit = 12; format = '%Y-%m'; break;  // 12 Monate -> 12 Monate
+        default:    limit = 14;                        // 14 Tage (Täglich)
+    }
+
     const sql = `
         SELECT 
-            strftime('%Y-%m-%d', timestamp / 1000, 'unixepoch', 'localtime') as day,
+            strftime('${format}', timestamp / 1000, 'unixepoch', 'localtime') as label,
             SUM(ww_active) as ww_minutes,
             SUM(heating_active) as heat_minutes,
             AVG(CASE WHEN heating_active = 1 THEN vlt ELSE NULL END) as avg_heat_vlt
         FROM readings 
-        GROUP BY day 
-        ORDER BY day DESC 
-        LIMIT 14
+        GROUP BY label 
+        ORDER BY label DESC 
+        LIMIT ?
     `;
     
-    db.all(sql, [], (err, rows) => {
+    db.all(sql, [limit], (err, rows) => {
         if (err) { console.error("Stats Error:", err); callback([]); return; }
         // Liste umdrehen, damit das älteste Datum links im Chart ist
         callback(rows.reverse());
     });
 }
 
-// --- LOGGING FUNKTIONEN ---
+// --- LOGGING ---
 function saveLog(level, message) {
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
     db.run("DELETE FROM system_logs WHERE timestamp < ?", [thirtyDaysAgo]);
@@ -157,4 +166,4 @@ function getLogs(dateStr, callback) {
     );
 }
 
-module.exports = { saveReading, getHistory, getComparison, saveLog, getLogs, getDailyStats };
+module.exports = { saveReading, getHistory, getComparison, saveLog, getLogs, getStats };

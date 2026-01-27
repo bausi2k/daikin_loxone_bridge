@@ -18,7 +18,7 @@ function switchTab(name) {
     
     if(name === 'charts') {
         loadHistory();
-        loadDailyStats(); // NEU
+        loadStats(); // <--- Statistik laden
     }
     if(name === 'logs') fetchLogs(); 
 }
@@ -192,14 +192,20 @@ async function manualRefresh() {
     try { await fetch('/refresh', { method: 'POST' }); setTimeout(() => icons.forEach(i => i.classList.remove('spin')), 1000); } catch (e) { icons.forEach(i => i.classList.remove('spin')); }
 }
 
-// --- NEU: Laden der täglichen Statistik ---
-async function loadDailyStats() {
+// --- NEU: Flexible Statistik laden ---
+async function loadStats() {
+    const mode = document.getElementById('statsFilter').value;
     try {
-        const res = await fetch('/api/stats/daily');
+        const res = await fetch(`/api/stats?mode=${mode}`);
         const data = await res.json();
         
-        // Daten für Chart aufbereiten
-        const labels = data.map(d => d.day.slice(5)); // Nur MM-DD anzeigen
+        // Labels aufhübschen
+        const labels = data.map(d => {
+            if(d.label.includes('W')) return "KW " + d.label.split('W')[1]; // Wochen
+            if(d.label.length === 7) return d.label; // Monate (YYYY-MM)
+            return d.label.slice(5); // Tage (MM-DD)
+        });
+
         const wwHours = data.map(d => (d.ww_minutes || 0) / 60);
         const heatHours = data.map(d => (d.heat_minutes || 0) / 60);
         const heatVlt = data.map(d => d.avg_heat_vlt);
@@ -248,7 +254,8 @@ async function loadDailyStats() {
                         position: 'left',
                         title: { display: true, text: 'Stunden', color: '#8e918f' },
                         ticks: { color: '#8e918f' },
-                        grid: { color: '#2d2f38' }
+                        grid: { color: '#2d2f38' },
+                        stacked: true // Balken stapeln (optional, sonst entfernen)
                     },
                     y_temp: {
                         type: 'linear',
@@ -256,7 +263,7 @@ async function loadDailyStats() {
                         position: 'right',
                         title: { display: true, text: '°C', color: '#ffcc80' },
                         ticks: { color: '#ffcc80' },
-                        grid: { drawOnChartArea: false } // Keine Gitterlinien für Temp, damit es nicht verwirrt
+                        grid: { drawOnChartArea: false }
                     }
                 },
                 plugins: {
@@ -356,6 +363,7 @@ async function loadConfig() {
         const res = await fetch('/api/config');
         const cfg = await res.json();
         
+        // --- NEU: Version in alle Platzhalter schreiben mit 'v' ---
         if (cfg.appVersion) {
             document.querySelectorAll('.version-tag').forEach(el => {
                 el.innerText = 'v' + cfg.appVersion;
