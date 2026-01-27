@@ -8,7 +8,9 @@ const path = require('path');
 const mqtt = require('mqtt'); 
 const DaikinClient = require('./daikin'); 
 const db = require('./database'); 
-const packageJson = require('./package.json'); // <--- NEU
+
+// 1. NEU: Package.json laden für Version
+const packageJson = require('./package.json'); 
 
 // --- CONFIG LADEN ---
 const CONFIG_FILE = './config.json';
@@ -62,9 +64,7 @@ function sendToLoxone(key, value) {
 // --- HELPER: LOGGING (DB & UI) ---
 function sendLog(msg, type = 'system') {
     const timestamp = Date.now();
-    // 1. In DB speichern
     db.saveLog(type, msg);
-    // 2. An UI senden (Live)
     broadcastToUI('log', { timestamp, msg, type });
 }
 
@@ -89,7 +89,6 @@ function connectMqtt() {
         sendLog('MQTT Verbunden', 'system');
         mqttClient.subscribe(`${config.mqttTopic}/set/#`);
 
-        // Initiale Werte mit Retain senden
         if (daikin.state) {
             console.log('[MQTT] Sende kompletten Status (Retained)...');
             for (const [key, value] of Object.entries(daikin.state)) {
@@ -116,9 +115,8 @@ connectMqtt();
 setInterval(() => {
     if (!daikin.state.VLT) return;
     
-    // Status für Warmwasser und HEIZUNG erfassen
     const isWWActive = daikin.state.Power_WW === 'on' ? 1 : 0;
-    const isHeatingActive = daikin.state.Power_Heating === 'on' ? 1 : 0; // NEU
+    const isHeatingActive = daikin.state.Power_Heating === 'on' ? 1 : 0;
 
     const entry = {
         vlt: parseFloat(daikin.state.VLT || 0),
@@ -127,7 +125,7 @@ setInterval(() => {
         tank: parseFloat(daikin.state.TankTemp || 0),
         target: parseFloat(daikin.state.Mode === 'cooling' ? (daikin.state.TargetVLT_Cool||0) : (daikin.state.TargetVLT_Heat||0)),
         ww_active: isWWActive,
-        heating_active: isHeatingActive // NEU: Speichern
+        heating_active: isHeatingActive
     };
     db.saveReading(entry);
 }, 60000); 
@@ -161,8 +159,6 @@ startUdpHeartbeat();
 // --- WEBSOCKET ---
 wss.on('connection', (ws) => {
     if (Object.keys(daikin.state).length > 0) ws.send(JSON.stringify({ type: 'state', data: daikin.state }));
-    
-    // Status korrekt senden
     ws.send(JSON.stringify({ type: 'mqtt_status', data: { connected: mqttConnected } }));
 });
 
@@ -183,7 +179,6 @@ daikin.on('log', (logEntry) => {
 daikin.on('update', (data) => {
     sendToLoxone(data.key, data.value);
     
-    // Retain Flag für MQTT
     if (mqttConnected) {
         mqttClient.publish(`${config.mqttTopic}/${data.key}`, String(data.value), { retain: true });
     }
@@ -209,7 +204,11 @@ daikin.on('update', (data) => {
 });
 
 // --- API ---
-app.get('/api/config', (req, res) => res.json(config));
+// 2. NEU: Version mitsenden!
+app.get('/api/config', (req, res) => {
+    res.json({ ...config, appVersion: packageJson.version });
+});
+
 app.post('/api/config', (req, res) => {
     config = { ...config, ...req.body };
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));

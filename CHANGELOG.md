@@ -2,6 +2,10 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.3.2] - 2026-01-27
+### 🐛 Fix
+- **Versions-Anzeige:** Die aktuelle Version wird nun in der Sidebar und im Setup-Tab angezeigt.
+
 ## [1.3.1] - 2026-01-27
 ### ✨ Neu
 - **Versions-Anzeige:** Die aktuelle Version wird nun in der Sidebar und im Setup-Tab angezeigt.
