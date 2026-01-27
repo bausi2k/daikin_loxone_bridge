@@ -106,3 +106,17 @@ h4 { margin: 20px 0 10px 0; color: var(--primary); opacity: 0.8; }
     .b-nav-item svg { width: 24px; height: 24px; fill: #666; transition: all 0.2s; }
     .b-nav-item span { font-size: 0.7rem; font-weight: 500; }
 }
+/* public/style.css - AM ENDE ANFÜGEN */
+.version-badge {
+    display: inline-block;
+    background: rgba(168, 199, 250, 0.15);
+    color: var(--primary);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(168, 199, 250, 0.2);
+    margin-left: 10px;
+    vertical-align: middle;
+    letter-spacing: 0.5px;
+}

@@ -13,7 +13,10 @@
 <body>
 
 <div class="mobile-header">
-    <div style="font-weight:500; font-size:1.2rem; display:flex; align-items:center; gap:10px; color:white;"><span class="status-dot" id="connDotMobile"></span> Daikin Bridge</div>
+    <div style="font-weight:500; font-size:1.2rem; display:flex; align-items:center; gap:10px; color:white;">
+        <span class="status-dot" id="connDotMobile"></span> 
+        Daikin Bridge <span class="version-tag version-badge"></span>
+    </div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="mqttBadgeMobile" class="mqtt-badge"><span class="mqtt-dot" id="mqttDotMobile"></span> <span>MQTT</span></div>
         <div class="refresh-icon" onclick="manualRefresh()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></div>
@@ -21,15 +24,14 @@
 </div>
 
 <div class="sidebar">
-    <div class="brand"><span class="status-dot" id="connDot"></span> Daikin Bridge</div>
+    <div class="brand">
+        <span class="status-dot" id="connDot"></span> 
+        Daikin Bridge <span class="version-tag version-badge"></span>
+    </div>
     <button class="nav-btn active" onclick="switchTab('dashboard')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Home</button>
     <button class="nav-btn" onclick="switchTab('charts')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> Analytics</button>
     <button class="nav-btn" onclick="switchTab('logs')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 14H7v-2h10v2zm0-4H7V7h10v2z"/></svg> Logs</button>
     <button class="nav-btn" onclick="switchTab('config')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5-3.5-1.57 3.5-3.5 3.5z"/></svg> Setup</button>
-    
-    <div style="margin-top: auto; padding-top: 20px; font-size: 0.75rem; color: var(--text-dim); text-align: center; opacity: 0.5;">
-        v<span class="version-tag">--</span>
-    </div>
 </div>
 
 <div class="main">
@@ -133,10 +135,6 @@
         </form>
         
         <div class="card" style="margin-top:20px;"><div class="card-title" style="margin-bottom:10px">Loxone Integration</div><div style="display:flex; gap:10px; flex-wrap:wrap;"><a href="/api/loxone.xml" target="_blank" style="text-decoration:none; flex:1;"><button class="btn-primary btn-download">Eingänge (UDP)</button></a><a href="/api/loxone_out.xml" target="_blank" style="text-decoration:none; flex:1;"><button class="btn-primary btn-download">Ausgänge (HTTP)</button></a></div></div>
-        
-        <div style="text-align: center; margin-top: 30px; font-size: 0.8rem; color: var(--text-dim); opacity: 0.5;">
-            Daikin Bridge v<span class="version-tag">--</span>
-        </div>
         
         <h3>API Dokumentation</h3>
         <div class="card">

@@ -291,10 +291,10 @@ async function loadConfig() {
         const res = await fetch('/api/config');
         const cfg = await res.json();
         
-        // --- NEU: Version in alle Platzhalter schreiben ---
+        // --- NEU: Version in alle Platzhalter schreiben mit 'v' ---
         if (cfg.appVersion) {
             document.querySelectorAll('.version-tag').forEach(el => {
-                el.innerText = cfg.appVersion;
+                el.innerText = 'v' + cfg.appVersion;
             });
         }
         
