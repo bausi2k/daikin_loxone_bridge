@@ -2,6 +2,16 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.4.0] - 2026-01-27
+
+### ✨ Neu
+- **Betriebszeiten-Statistik:** Neues Balkendiagramm im Analytics-Tab zeigt die täglichen Laufzeiten (in Stunden) für Heizung und Warmwasser der letzten 14 Tage.
+- **Effizienz-Check:** Zusätzlich wird die durchschnittliche Vorlauftemperatur pro Tag als Kurve über den Balken angezeigt, um die Effizienz der Heiztage zu bewerten.
+
+### 🛠 Technik
+- **Backend:** Neue API Route `/api/stats/daily` für aggregierte Tageswerte.
+- **Datenbank:** Komplexe SQL-Aggregation (`GROUP BY day`, `AVG`, `SUM`) direkt in der SQLite Query für maximale Performance.
+
 ## [1.3.2] - 2026-01-27
 ### 🐛 Fix
 - **Versions-Anzeige:** Die aktuelle Version wird nun in der Sidebar und im Setup-Tab angezeigt.

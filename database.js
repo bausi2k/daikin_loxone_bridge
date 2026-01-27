@@ -12,14 +12,13 @@ db.serialize(() => {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp INTEGER,
             vlt REAL, outdoor REAL, indoor REAL, tank REAL, target REAL,
-            ww_active INTEGER DEFAULT 0
+            ww_active INTEGER DEFAULT 0,
+            heating_active INTEGER DEFAULT 0
         )
     `);
     
-    // Alte Spalte "ww_active" (falls noch nicht da - für Updates)
+    // Spalten Updates (falls nötig)
     db.run("ALTER TABLE readings ADD COLUMN ww_active INTEGER DEFAULT 0", (err) => {});
-
-    // --- NEU: Spalte für Heiz-Status hinzufügen ---
     db.run("ALTER TABLE readings ADD COLUMN heating_active INTEGER DEFAULT 0", (err) => {});
 
     db.run(`CREATE INDEX IF NOT EXISTS idx_timestamp ON readings(timestamp)`);
@@ -38,7 +37,6 @@ db.serialize(() => {
 
 // --- READINGS ---
 function saveReading(data) {
-    // NEU: heating_active wird mitgespeichert
     const stmt = db.prepare(`INSERT INTO readings (timestamp, vlt, outdoor, indoor, tank, target, ww_active, heating_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
     stmt.run(Date.now(), data.vlt, data.outdoor, data.indoor, data.tank, data.target, data.ww_active || 0, data.heating_active || 0);
     stmt.finalize();
@@ -60,7 +58,6 @@ function getHistory(mode, callback) {
     const startOfYear = new Date(); startOfYear.setMonth(0, 1); startOfYear.setHours(0,0,0,0);
     const startOfLastYear = new Date(startOfYear); startOfLastYear.setFullYear(startOfLastYear.getFullYear() - 1);
 
-    // NEU: heating_active wird mit abgefragt
     const baseQuery = `SELECT timestamp, vlt, outdoor, indoor, tank, target, ww_active, heating_active FROM readings`;
 
     switch (mode) {
@@ -107,6 +104,30 @@ function getComparison(mode, callback) {
     });
 }
 
+// --- NEU: TÄGLICHE BETRIEBSSTATISTIK ---
+function getDailyStats(callback) {
+    // Wir gruppieren nach Tag (YYYY-MM-DD).
+    // SUM(ww_active) = Minuten WW Betrieb (da 1 Eintrag pro Minute)
+    // AVG(...) = Durchschnitts-VLT, aber NUR wenn die Heizung lief!
+    const sql = `
+        SELECT 
+            strftime('%Y-%m-%d', timestamp / 1000, 'unixepoch', 'localtime') as day,
+            SUM(ww_active) as ww_minutes,
+            SUM(heating_active) as heat_minutes,
+            AVG(CASE WHEN heating_active = 1 THEN vlt ELSE NULL END) as avg_heat_vlt
+        FROM readings 
+        GROUP BY day 
+        ORDER BY day DESC 
+        LIMIT 14
+    `;
+    
+    db.all(sql, [], (err, rows) => {
+        if (err) { console.error("Stats Error:", err); callback([]); return; }
+        // Liste umdrehen, damit das älteste Datum links im Chart ist
+        callback(rows.reverse());
+    });
+}
+
 // --- LOGGING FUNKTIONEN ---
 function saveLog(level, message) {
     const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
@@ -136,4 +157,4 @@ function getLogs(dateStr, callback) {
     );
 }
 
-module.exports = { saveReading, getHistory, getComparison, saveLog, getLogs };
+module.exports = { saveReading, getHistory, getComparison, saveLog, getLogs, getDailyStats };

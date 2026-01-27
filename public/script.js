@@ -1,7 +1,7 @@
 // public/script.js
 let currentState = {};
 const logContainer = document.getElementById('log-container');
-let chartVLT = null, chartTank = null, chartIndoor = null, chartOutdoor = null;
+let chartVLT = null, chartTank = null, chartIndoor = null, chartOutdoor = null, chartDaily = null;
 let currentFilter = 'all';
 
 // Init: Setze Datepicker auf heute
@@ -16,8 +16,11 @@ function switchTab(name) {
     document.querySelectorAll('.nav-btn')[idx].classList.add('active');
     document.querySelectorAll('.b-nav-item')[idx].classList.add('active');
     
-    if(name === 'charts') loadHistory();
-    if(name === 'logs') fetchLogs(); // Logs initial laden
+    if(name === 'charts') {
+        loadHistory();
+        loadDailyStats(); // NEU
+    }
+    if(name === 'logs') fetchLogs(); 
 }
 
 function connectWS() {
@@ -32,7 +35,6 @@ function connectWS() {
             if (msg.type === 'log') addLog(msg.data); 
             
             if (msg.type === 'mqtt_status') {
-                // ROBUSTHEITS-FIX: Prüfe beide Formate
                 const isConnected = (msg.data && msg.data.connected !== undefined) 
                                     ? msg.data.connected 
                                     : msg.connected;
@@ -90,7 +92,7 @@ function updateDashboard(data) {
     setBtnState('btn-ww-off', data.Power_WW !== 'on', 'active-on');
     setBtnState('btn-turbo', parseInt(data.Powerful_WW || 0) === 1, 'active-turbo');
 
-    // Status Logik (Abweichung Ist vs. Soll)
+    // Status Logik
     const elStatus = document.getElementById('val-status');
     if (data.Power_Heating === 'on' && vltTarget !== '--') {
         const target = parseFloat(vltTarget);
@@ -190,6 +192,81 @@ async function manualRefresh() {
     try { await fetch('/refresh', { method: 'POST' }); setTimeout(() => icons.forEach(i => i.classList.remove('spin')), 1000); } catch (e) { icons.forEach(i => i.classList.remove('spin')); }
 }
 
+// --- NEU: Laden der täglichen Statistik ---
+async function loadDailyStats() {
+    try {
+        const res = await fetch('/api/stats/daily');
+        const data = await res.json();
+        
+        // Daten für Chart aufbereiten
+        const labels = data.map(d => d.day.slice(5)); // Nur MM-DD anzeigen
+        const wwHours = data.map(d => (d.ww_minutes || 0) / 60);
+        const heatHours = data.map(d => (d.heat_minutes || 0) / 60);
+        const heatVlt = data.map(d => d.avg_heat_vlt);
+
+        const ctx = document.getElementById('dailyChart').getContext('2d');
+        if(chartDaily) chartDaily.destroy();
+
+        chartDaily = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Ø VLT (Heizen)',
+                        data: heatVlt,
+                        type: 'line',
+                        borderColor: '#ffcc80',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        tension: 0.4,
+                        yAxisID: 'y_temp'
+                    },
+                    {
+                        label: 'Heizung (Std)',
+                        data: heatHours,
+                        backgroundColor: '#ffb74d',
+                        yAxisID: 'y_hours'
+                    },
+                    {
+                        label: 'WW (Std)',
+                        data: wwHours,
+                        backgroundColor: '#6dd58c',
+                        yAxisID: 'y_hours'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { ticks: { color: '#8e918f' }, grid: { color: '#2d2f38' } },
+                    y_hours: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Stunden', color: '#8e918f' },
+                        ticks: { color: '#8e918f' },
+                        grid: { color: '#2d2f38' }
+                    },
+                    y_temp: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: '°C', color: '#ffcc80' },
+                        ticks: { color: '#ffcc80' },
+                        grid: { drawOnChartArea: false } // Keine Gitterlinien für Temp, damit es nicht verwirrt
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#e2e2e6' } }
+                }
+            }
+        });
+    } catch(e) { console.error("Stats Error", e); }
+}
+
 async function loadHistory() {
     const mode = document.getElementById('chartFilter').value;
     const res = await fetch(`/api/history?mode=${mode}`);
@@ -201,25 +278,13 @@ async function loadHistory() {
 function renderStandard(data) {
     const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
     const backgroundData = data.map(d => d.ww_active === 1 ? 1 : null);
-    
-    // NEU: Hintergrund für Heiz-Status
     const heatingBackgroundData = data.map(d => d.heating_active === 1 ? 1 : null);
 
-    // NEU: vltChart mit Hintergrund
     updateChart('vltChart', chartVLT, labels, [
-        { 
-            label: 'Heizung Aktiv', 
-            data: heatingBackgroundData, 
-            borderColor: 'transparent', 
-            backgroundColor: 'rgba(255, 183, 77, 0.2)', // Orange-Transparent
-            fill: true, 
-            radius: 0, 
-            stepped: true, 
-            yAxisID: 'y_status' 
-        },
+        { label: 'Heizung Aktiv', data: heatingBackgroundData, borderColor: 'transparent', backgroundColor: 'rgba(255, 183, 77, 0.2)', fill: true, radius: 0, stepped: true, yAxisID: 'y_status' },
         { label: 'Vorlauf Ist', data: data.map(d => d.vlt), borderColor: '#ffb74d', tension: 0.5, yAxisID: 'y' },
         { label: 'Soll', data: data.map(d => d.target), borderColor: '#ffcc80', borderDash: [5,5], tension: 0, yAxisID: 'y' }
-    ], (c) => chartVLT = c, true); // <--- Dual Axis Mode
+    ], (c) => chartVLT = c, true);
 
     updateChart('tankChart', chartTank, labels, [
         { label: 'WW Aktiv', data: backgroundData, borderColor: 'transparent', backgroundColor: 'rgba(109, 213, 140, 0.2)', fill: true, radius: 0, stepped: true, yAxisID: 'y_status' },
@@ -291,7 +356,6 @@ async function loadConfig() {
         const res = await fetch('/api/config');
         const cfg = await res.json();
         
-        // --- NEU: Version in alle Platzhalter schreiben mit 'v' ---
         if (cfg.appVersion) {
             document.querySelectorAll('.version-tag').forEach(el => {
                 el.innerText = 'v' + cfg.appVersion;
