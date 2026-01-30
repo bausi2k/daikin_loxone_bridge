@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0d11">
+    <title>Daikin Bridge</title>
+    <link rel="icon" href="data:,">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="mobile-header">
+    <div style="font-weight:500; font-size:1.2rem; display:flex; align-items:center; gap:10px; color:white;">
+        <span class="status-dot" id="connDotMobile"></span> 
+        Daikin Bridge <span class="version-tag version-badge"></span>
+    </div>
+    <div style="display:flex; gap:15px; align-items:center;">
+        <div id="mqttBadgeMobile" class="mqtt-badge"><span class="mqtt-dot" id="mqttDotMobile"></span> <span>MQTT</span></div>
+        <div class="refresh-icon" onclick="manualRefresh()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></div>
+    </div>
+</div>
+
+<div class="sidebar">
+    <div class="brand">
+        <span class="status-dot" id="connDot"></span> 
+        Daikin Bridge <span class="version-tag version-badge"></span>
+    </div>
+    <button class="nav-btn active" onclick="switchTab('dashboard')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg> Home</button>
+    <button class="nav-btn" onclick="switchTab('charts')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg> Analytics</button>
+    <button class="nav-btn" onclick="switchTab('logs')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 14H7v-2h10v2zm0-4H7V7h10v2z"/></svg> Logs</button>
+    <button class="nav-btn" onclick="switchTab('config')"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5-3.5-1.57 3.5-3.5 3.5z"/></svg> Setup</button>
+</div>
+
+<div class="main">
+    <div id="errorBanner">⚠️ STÖRUNG ⚠️</div>
+
+    <div id="view-dashboard" class="view active">
+        <div class="header-area desktop-only-header">
+            <h2>Übersicht</h2>
+            <div style="display:flex; gap:15px; align-items:center;">
+                <div id="mqttBadge" class="mqtt-badge"><span class="mqtt-dot" id="mqttDot"></span> MQTT</div>
+                <div class="refresh-icon" onclick="manualRefresh()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></div>
+            </div>
+        </div>
+        
+        <div class="tile-grid">
+            <div class="tile" id="tile-vlt"><svg class="tile-icon" viewBox="0 0 24 24"><path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2zm0 2.84L19.16 12H17v8h-4v-6h-2v6H7v-8H4.84L12 4.84z"/></svg><div><div class="tile-label">Vorlauf Ist</div><div class="tile-value"><span id="val-vlt">--</span>°</div></div></div>
+            <div class="tile" id="tile-tank"><svg class="tile-icon" viewBox="0 0 24 24"><path d="M12 2C7.58 2 4 4.2 4 7v10c0 2.8 3.58 5 8 5s8-2.2 8-5V7c0-2.8-3.58-5-8-5zm0 2c3.27 0 6 1.25 6 3 0 1.75-2.73 3-6 3s-6-1.25-6-3c0-1.75 2.73-3 6-3zm0 16c-3.27 0-6-1.25-6-3V8.8c1.23.97 3.45 1.7 6 1.7s4.77-.73 6-1.7V17c0 1.75-2.73 3-6 3z"/></svg><div><div class="tile-label">Warmwasser</div><div class="tile-value"><span id="val-tank">--</span>°</div></div></div>
+            <div class="tile"><svg class="tile-icon" viewBox="0 0 24 24"><path d="M12 3L2 12h3v8h14v-8h3L12 3zm0 5.5c1.38 0 2.5 1.12 2.5 2.5S13.38 13.5 12 13.5s-2.5-1.12-2.5-2.5S10.62 8.5 12 8.5z"/></svg><div><div class="tile-label">Innen</div><div class="tile-value"><span id="val-indoor">--</span>°</div></div></div>
+            <div class="tile"><svg class="tile-icon" viewBox="0 0 24 24"><path d="M12 2c-5.52 0-10 4.48-10 10s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg><div><div class="tile-label">Außen</div><div class="tile-value"><span id="val-outdoor">--</span>°</div></div></div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Heizkreis</span><div id="badge-mode" style="font-size:0.8rem; font-weight:bold; color:var(--text-dim);">STANDBY</div></div>
+                <div class="temp-control">
+                    <div>
+                        <div style="font-size:0.8rem; opacity:0.7;">Sollwert</div>
+                        <div><span class="temp-display" id="val-vlt-target">--</span> <span class="temp-unit">°C</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.8rem; opacity:0.7; text-align:right;">Offset</div>
+                        <div class="stepper" style="margin-top:5px;"><button class="step-btn" onclick="changeOffset(-1)">-</button><div style="display:flex; align-items:center; font-weight:bold; width:40px; justify-content:center;"><span id="val-offset">0</span></div><button class="step-btn" onclick="changeOffset(1)">+</button></div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 10px 15px; display:flex; justify-content:space-between; align-items:center; margin-top:-10px;">
+                    <span style="font-size:0.85rem; color:var(--text-dim);">Status</span>
+                    <span id="val-status" style="font-size:0.9rem; font-weight:bold; color:var(--secondary);">--</span>
+                </div>
+
+                <div class="mode-selector">
+                    <button class="mode-btn" id="btn-heat-off" onclick="sendCmd('power', 'standby')">Aus</button>
+                    <button class="mode-btn" id="btn-mode-heat" onclick="setMode('heating')">Heizen</button>
+                    <button class="mode-btn" id="btn-mode-cool" onclick="setMode('cooling')">Kühlen</button>
+                    <button class="mode-btn" id="btn-mode-auto" onclick="setMode('auto')">Auto</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Warmwasser</span></div>
+                <div class="temp-control"><div><div style="font-size:0.8rem; opacity:0.7;">Sollwert</div><div><span class="temp-display" id="val-ww-target">--</span> <span class="temp-unit">°C</span></div></div></div>
+                <div class="mode-selector">
+                    <button class="mode-btn" id="btn-ww-off" onclick="sendCmd('ww_power', 'standby')">Aus</button>
+                    <button class="mode-btn" id="btn-ww-on" onclick="sendCmd('ww_power', 'on')">An</button>
+                    <button class="mode-btn" id="btn-turbo" onclick="toggleTurbo()">Turbo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-charts" class="view">
+        <div class="header-area"><h2>Analytics</h2><div class="refresh-icon" onclick="loadHistory()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></div></div>
+        
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-header" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <span class="card-title">Betriebszeiten</span>
+                <select id="statsFilter" onchange="loadStats()" style="width:auto; padding:6px 12px; margin-top:0; font-size:0.85rem;">
+                    <option value="14d">14 Tage</option>
+                    <option value="30d">30 Tage</option>
+                    <option value="3m">3 Monate (Woche)</option>
+                    <option value="6m">6 Monate (Woche)</option>
+                    <option value="12m">1 Jahr (Monat)</option>
+                </select>
+            </div>
+            <div class="chart-wrapper"><canvas id="dailyChart"></canvas></div>
+        </div>
+
+        <select id="chartFilter" onchange="loadHistory()" style="margin-bottom:20px;"><option value="24h">Letzte 24 Stunden</option><option value="today">Heute</option><option value="compare_days">Heute vs. Gestern</option><option disabled>──────────</option><option value="month">Aktueller Monat</option><option value="last_month">Letzter Monat</option><option value="compare_months">Dieser vs. Letzter Monat</option></select>
+        <div class="card" style="margin-bottom:20px"><div class="card-title">Vorlauf Analyse</div><div class="chart-wrapper"><canvas id="vltChart"></canvas></div></div>
+        <div class="card" style="margin-bottom:20px"><div class="card-title">Warmwasser</div><div class="chart-wrapper"><canvas id="tankChart"></canvas></div></div>
+        <div class="card" style="margin-bottom:20px"><div class="card-title">Innen Temperatur</div><div class="chart-wrapper"><canvas id="indoorChart"></canvas></div></div>
+        <div class="card" style="margin-bottom:20px"><div class="card-title">Außen Temperatur</div><div class="chart-wrapper"><canvas id="outdoorChart"></canvas></div></div>
+    </div>
+
+    <div id="view-logs" class="view">
+        <div class="header-area"><h2>System Logs</h2><div style="cursor:pointer; color:var(--primary)" onclick="document.getElementById('log-container').innerHTML=''">Clear</div></div>
+        <div class="filter-bar">
+            <button class="filter-pill active" onclick="filterLogs('all', this)">Alle</button>
+            <button class="filter-pill" onclick="filterLogs('system', this)">System</button>
+            <button class="filter-pill" onclick="filterLogs('input', this)">Daten (In)</button>
+            <button class="filter-pill" onclick="filterLogs('output', this)">Befehle (Out)</button>
+            <input type="date" id="logDate" class="date-input" onchange="fetchLogs()">
+        </div>
+        <div id="log-container" class="log-console"></div>
+    </div>
+
+    <div id="view-config" class="view">
+        <div class="header-area"><h2>Einstellungen</h2></div>
+        <form onsubmit="event.preventDefault(); saveConfig();">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">Verbindungen</div>
+                    <label>Daikin IP</label><input type="text" id="cfg-daikin" autocomplete="off">
+                    <label>Loxone IP</label><input type="text" id="cfg-loxone" autocomplete="off">
+                    <label>Loxone Port (UDP)</label><input type="number" id="cfg-port">
+                    <label>Loxone UDP Keep-Alive (Sek)</label><input type="number" id="cfg-keepAlive" placeholder="90">
+                </div>
+                <div class="card">
+                    <div class="card-title">MQTT</div>
+                    <label>Broker</label><input type="text" id="cfg-mqttBroker" autocomplete="url">
+                    <label>Topic</label><input type="text" id="cfg-mqttTopic" autocomplete="off">
+                    <label>User</label><input type="text" id="cfg-mqttUser" autocomplete="username">
+                    <label>Pass</label><input type="password" id="cfg-mqttPass" autocomplete="current-password">
+                </div>
+            </div>
+            <button type="submit" class="btn-primary">Speichern & Neustart</button>
+        </form>
+        
+        <div class="card" style="margin-top:20px;"><div class="card-title" style="margin-bottom:10px">Loxone Integration</div><div style="display:flex; gap:10px; flex-wrap:wrap;"><a href="/api/loxone.xml" target="_blank" style="text-decoration:none; flex:1;"><button class="btn-primary btn-download">Eingänge (UDP)</button></a><a href="/api/loxone_out.xml" target="_blank" style="text-decoration:none; flex:1;"><button class="btn-primary btn-download">Ausgänge (HTTP)</button></a></div></div>
+        
+        <div style="text-align: center; margin-top: 30px; font-size: 0.8rem; color: var(--text-dim); opacity: 0.5;">
+            Daikin Bridge v<span class="version-tag">--</span>
+        </div>
+        
+        <h3>API Dokumentation</h3>
+        <div class="card">
+            <h4>1. HTTP Steuerung (Ausgang)</h4>
+            <p style="font-size:0.8rem; color:#888;">Nutze <code>&lt;v&gt;</code> als Platzhalter in Loxone.</p>
+            <table>
+                <tr><th>Funktion</th><th>Befehl / URI</th><th>Erlaubte Werte</th></tr>
+                <tr><td>Heizung Ein/Aus</td><td><code>/set?cmd=power&val=&lt;v&gt;</code></td><td>0=Aus, 1=Ein</td></tr>
+                <tr><td>Modus</td><td><code>/set?cmd=mode&val=&lt;v&gt;</code></td><td>0=Standby, 1=Heiz, 2=Kühl, 3=Auto</td></tr>
+                <tr><td>VLT Soll</td><td><code>/set?cmd=vlt&val=&lt;v&gt;</code></td><td>Temperatur (z.B. 35)</td></tr>
+                <tr><td>Offset</td><td><code>/set?cmd=offset_heat&val=&lt;v&gt;</code></td><td>-5 bis +5</td></tr>
+                <tr><td>WW Ein/Aus</td><td><code>/set?cmd=ww_power&val=&lt;v&gt;</code></td><td>0=Aus, 1=Ein</td></tr>
+                <tr><td>WW Turbo</td><td><code>/set?cmd=ww_powerful&val=&lt;v&gt;</code></td><td>0=Aus, 1=Ein</td></tr>
+                <tr><td>WW Soll</td><td><code>/set?cmd=ww_temp&val=&lt;v&gt;</code></td><td>Temperatur (z.B. 48)</td></tr>
+            </table>
+            
+            <h4>2. UDP Empfang (Eingang)</h4>
+            <table>
+                <tr><th>Kategorie</th><th>Erkennung</th><th>Wertebereich</th></tr>
+                <tr><td>Status</td><td><code>WP_Mode: \v</code><br><code>WP_Power_Heating: \v</code><br><code>WP_Power_WW: \v</code><br><code>WP_Powerful_WW: \v</code></td><td>0=Aus, 1=Heiz, 2=Kühl, 3=Auto<br>0=Aus, 1=Ein<br>0=Aus, 1=Ein<br>0=Aus, 1=Ein</td></tr>
+                <tr><td>Temperaturen (Ist)</td><td><code>WP_VLT: \v</code><br><code>WP_OutdoorTemp: \v</code><br><code>WP_IndoorTemp: \v</code><br><code>WP_TankTemp: \v</code></td><td>Gleitkommazahl (°C)</td></tr>
+                <tr><td>Temperaturen (Soll)</td><td><code>WP_TargetVLT_Heat: \v</code><br><code>WP_TargetVLT_Cool: \v</code><br><code>WP_TargetTemp_WW: \v</code></td><td>Gleitkommazahl (°C)</td></tr>
+                <tr><td>Offsets</td><td><code>WP_Offset_Heat: \v</code><br><code>WP_Offset_Cool: \v</code></td><td>Gleitkommazahl (K)</td></tr>
+                <tr><td>Fehler</td><td><code>WP_Error: \v</code></td><td>Fehlercode (0=OK)</td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav">
+    <button class="b-nav-item active" onclick="switchTab('dashboard')"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span>Home</span></button>
+    <button class="b-nav-item" onclick="switchTab('charts')"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg><span>Analytics</span></button>
+    <button class="b-nav-item" onclick="switchTab('logs')"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg><span>Logs</span></button>
+    <button class="b-nav-item" onclick="switchTab('config')"><svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5-3.5-1.57 3.5-3.5 3.5z"/></svg><span>Setup</span></button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

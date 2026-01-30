@@ -1,0 +1,169 @@
+// database.js
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+
+const dbPath = path.join(__dirname, 'history.db');
+const db = new sqlite3.Database(dbPath);
+
+db.serialize(() => {
+    // Readings Tabelle
+    db.run(`
+        CREATE TABLE IF NOT EXISTS readings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp INTEGER,
+            vlt REAL, outdoor REAL, indoor REAL, tank REAL, target REAL,
+            ww_active INTEGER DEFAULT 0,
+            heating_active INTEGER DEFAULT 0
+        )
+    `);
+    
+    // Spalten Updates (falls nötig)
+    db.run("ALTER TABLE readings ADD COLUMN ww_active INTEGER DEFAULT 0", (err) => {});
+    db.run("ALTER TABLE readings ADD COLUMN heating_active INTEGER DEFAULT 0", (err) => {});
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_timestamp ON readings(timestamp)`);
+
+    // Logs Tabelle
+    db.run(`
+        CREATE TABLE IF NOT EXISTS system_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp INTEGER,
+            level TEXT,
+            message TEXT
+        )
+    `);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_log_ts ON system_logs(timestamp)`);
+});
+
+// --- READINGS ---
+function saveReading(data) {
+    const stmt = db.prepare(`INSERT INTO readings (timestamp, vlt, outdoor, indoor, tank, target, ww_active, heating_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`);
+    stmt.run(Date.now(), data.vlt, data.outdoor, data.indoor, data.tank, data.target, data.ww_active || 0, data.heating_active || 0);
+    stmt.finalize();
+}
+
+function getHistory(mode, callback) {
+    let sql = "";
+    let params = [];
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+    const startOfYesterday = new Date(startOfDay.getTime() - oneDay);
+    const endOfYesterday = new Date(startOfDay.getTime());
+    
+    const startOfMonth = new Date(); startOfMonth.setDate(1); startOfMonth.setHours(0,0,0,0);
+    const startOfLastMonth = new Date(startOfMonth); startOfLastMonth.setMonth(startOfLastMonth.getMonth() - 1);
+    
+    const startOfYear = new Date(); startOfYear.setMonth(0, 1); startOfYear.setHours(0,0,0,0);
+    const startOfLastYear = new Date(startOfYear); startOfLastYear.setFullYear(startOfLastYear.getFullYear() - 1);
+
+    const baseQuery = `SELECT timestamp, vlt, outdoor, indoor, tank, target, ww_active, heating_active FROM readings`;
+
+    switch (mode) {
+        case '24h':
+            sql = `${baseQuery} WHERE timestamp > ? ORDER BY timestamp ASC`; params = [now - oneDay]; break;
+        case 'today':
+            sql = `${baseQuery} WHERE timestamp > ? ORDER BY timestamp ASC`; params = [startOfDay.getTime()]; break;
+        case 'yesterday':
+            sql = `${baseQuery} WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp ASC`; params = [startOfYesterday.getTime(), endOfYesterday.getTime()]; break;
+        case 'month':
+            sql = `SELECT min(timestamp) as timestamp, avg(vlt) as vlt, avg(outdoor) as outdoor, avg(tank) as tank FROM readings WHERE timestamp > ? GROUP BY strftime('%d-%H', timestamp / 1000, 'unixepoch', 'localtime') ORDER BY timestamp ASC`; params = [startOfMonth.getTime()]; break;
+        case 'last_month':
+            sql = `SELECT min(timestamp) as timestamp, avg(vlt) as vlt, avg(outdoor) as outdoor, avg(tank) as tank FROM readings WHERE timestamp >= ? AND timestamp < ? GROUP BY strftime('%d-%H', timestamp / 1000, 'unixepoch', 'localtime') ORDER BY timestamp ASC`; params = [startOfLastMonth.getTime(), startOfMonth.getTime()]; break;
+        case 'year':
+            sql = `SELECT min(timestamp) as timestamp, avg(vlt) as vlt, avg(outdoor) as outdoor, avg(tank) as tank FROM readings WHERE timestamp > ? GROUP BY strftime('%m-%d', timestamp / 1000, 'unixepoch', 'localtime') ORDER BY timestamp ASC`; params = [startOfYear.getTime()]; break;
+        case 'last_year':
+            sql = `SELECT min(timestamp) as timestamp, avg(vlt) as vlt, avg(outdoor) as outdoor, avg(tank) as tank FROM readings WHERE timestamp >= ? AND timestamp < ? GROUP BY strftime('%m-%d', timestamp / 1000, 'unixepoch', 'localtime') ORDER BY timestamp ASC`; params = [startOfLastYear.getTime(), startOfYear.getTime()]; break;
+        default:
+            sql = `${baseQuery} WHERE timestamp > ? ORDER BY timestamp ASC`; params = [now - oneDay];
+    }
+
+    db.all(sql, params, (err, rows) => {
+        if (err) { console.error(err); callback([]); return; }
+        callback(rows);
+    });
+}
+
+function getComparison(mode, callback) {
+    let q1_mode, q2_mode;
+    if (mode === 'compare_days') { q1_mode = 'today'; q2_mode = 'yesterday'; } 
+    else if (mode === 'compare_months') { q1_mode = 'month'; q2_mode = 'last_month'; } 
+    else { return callback(null); }
+
+    getHistory(q1_mode, (dataCurrent) => {
+        getHistory(q2_mode, (dataPrevious) => {
+            const normalizedPrev = dataPrevious.map(d => {
+                const date = new Date(d.timestamp);
+                if (mode === 'compare_days') date.setDate(date.getDate() + 1); 
+                if (mode === 'compare_months') date.setMonth(date.getMonth() + 1); 
+                return { ...d, timestamp: date.getTime(), original_ts: d.timestamp };
+            });
+            callback({ current: dataCurrent, previous: normalizedPrev });
+        });
+    });
+}
+
+// --- NEU: FLEXIBLE STATISTIK (Tag/Woche/Monat) ---
+function getStats(mode, callback) {
+    let limit = 14;
+    let format = '%Y-%m-%d'; // Standard: Täglich
+
+    // Modi definieren
+    switch(mode) {
+        case '30d': limit = 30; break;                 // 30 Tage (Täglich)
+        case '3m':  limit = 13; format = '%Y-W%W'; break; // 3 Monate -> ~13 Wochen
+        case '6m':  limit = 26; format = '%Y-W%W'; break; // 6 Monate -> ~26 Wochen
+        case '12m': limit = 12; format = '%Y-%m'; break;  // 12 Monate -> 12 Monate
+        default:    limit = 14;                        // 14 Tage (Täglich)
+    }
+
+    const sql = `
+        SELECT 
+            strftime('${format}', timestamp / 1000, 'unixepoch', 'localtime') as label,
+            SUM(ww_active) as ww_minutes,
+            SUM(heating_active) as heat_minutes,
+            AVG(CASE WHEN heating_active = 1 THEN vlt ELSE NULL END) as avg_heat_vlt
+        FROM readings 
+        GROUP BY label 
+        ORDER BY label DESC 
+        LIMIT ?
+    `;
+    
+    db.all(sql, [limit], (err, rows) => {
+        if (err) { console.error("Stats Error:", err); callback([]); return; }
+        // Liste umdrehen, damit das älteste Datum links im Chart ist
+        callback(rows.reverse());
+    });
+}
+
+// --- LOGGING ---
+function saveLog(level, message) {
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    db.run("DELETE FROM system_logs WHERE timestamp < ?", [thirtyDaysAgo]);
+
+    const stmt = db.prepare("INSERT INTO system_logs (timestamp, level, message) VALUES (?, ?, ?)");
+    stmt.run(Date.now(), level, message);
+    stmt.finalize();
+}
+
+function getLogs(dateStr, callback) {
+    if (!dateStr) {
+        db.all("SELECT timestamp, level, message FROM system_logs ORDER BY timestamp DESC LIMIT 100", [], (err, rows) => {
+            if(err) callback([]); else callback(rows.reverse()); 
+        });
+        return;
+    }
+
+    const start = new Date(dateStr); start.setHours(0,0,0,0);
+    const end = new Date(dateStr); end.setHours(23,59,59,999);
+
+    db.all("SELECT timestamp, level, message FROM system_logs WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC", 
+        [start.getTime(), end.getTime()], 
+        (err, rows) => {
+            if(err) callback([]); else callback(rows);
+        }
+    );
+}
+
+module.exports = { saveReading, getHistory, getComparison, saveLog, getLogs, getStats };

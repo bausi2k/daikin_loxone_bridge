@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  daikin-bridge:
+    # Das Image von deiner GitHub Registry
+    image: ghcr.io/bausi2k/daikin_loxone_bridge:latest
+    container_name: daikin-bridge
+    restart: unless-stopped
+    
+    # WICHTIG: Host Mode für direkte UDP Kommunikation mit Loxone
+    network_mode: host
+    
+    environment:
+      - TZ=Europe/Vienna
+    volumes:
+      # Nur Config und Datenbank persistieren
+      - ./config.json:/app/config.json
+      - ./history.db:/app/history.db

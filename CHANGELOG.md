@@ -1,0 +1,96 @@
+# Changelog
+
+Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
+
+## [1.4.1] - 2026-01-27
+### ✨ Neu
+- **Langzeit-Statistiken:** Das "Betriebszeiten"-Chart bietet nun ein Dropdown-Menü für längere Zeiträume (30 Tage, 3 Monate, 6 Monate, 1 Jahr).
+- **Smarte Aggregation:** Bei Zeiträumen über 14 Tagen werden die Daten automatisch wochen- oder monatsweise zusammengefasst, um die Übersichtlichkeit zu wahren.
+
+### 🛠 Technik
+- **Datenbank:** Optimierte SQL-Queries für Wochen (`%W`) und Monats (`%m`) Gruppierung in SQLite.
+
+## [1.4.0] - 2026-01-27
+
+### ✨ Neu
+- **Betriebszeiten-Statistik:** Neues Balkendiagramm im Analytics-Tab zeigt die täglichen Laufzeiten (in Stunden) für Heizung und Warmwasser der letzten 14 Tage.
+- **Effizienz-Check:** Zusätzlich wird die durchschnittliche Vorlauftemperatur pro Tag als Kurve über den Balken angezeigt, um die Effizienz der Heiztage zu bewerten.
+
+### 🛠 Technik
+- **Backend:** Neue API Route `/api/stats/daily` für aggregierte Tageswerte.
+- **Datenbank:** Komplexe SQL-Aggregation (`GROUP BY day`, `AVG`, `SUM`) direkt in der SQLite Query für maximale Performance.
+
+## [1.3.2] - 2026-01-27
+### 🐛 Fix
+- **Versions-Anzeige:** Die aktuelle Version wird nun in der Sidebar und im Setup-Tab angezeigt.
+
+## [1.3.1] - 2026-01-27
+### ✨ Neu
+- **Versions-Anzeige:** Die aktuelle Version wird nun in der Sidebar und im Setup-Tab angezeigt.
+- **Status-Info:** Neue Anzeige im Dashboard, ob die Wärmepumpe gerade aufheizt, abkühlt oder den Sollwert hält.
+
+### 🛠 Technik
+- **Code-Struktur:** Trennung von HTML, CSS und JavaScript für bessere Wartbarkeit (`script.js`, `style.css`).
+- **Bugfix:** Robustere Verarbeitung des MQTT-Verbindungsstatus im Frontend.
+- **Bugfix:** Favicon 404 Fehler behoben.
+
+## [1.3.0] - 2026-01-23
+
+### ✨ Neu (Features)
+- **Erweiterte Visualisierung:** Im Warmwasser-Graphen wird nun durch eine rote Hintergrund-Schattierung angezeigt, wann die Warmwasser-Aufbereitung aktiv war.
+- **Datenbank-Upgrade:** Automatische Erweiterung der `readings` Tabelle um die Spalte `ww_active` (ohne Datenverlust).
+
+### 🛠 Technik
+- **Chart.js:** Implementierung einer Dual-Axis Logik, um Status-Bereiche (An/Aus) hinter die Temperaturkurven zu legen.
+- **Backend:** Erfassung des `Power_WW` Status im minütlichen Interval.
+
+## [1.2.0] - 2026-01-23
+... (restlicher Inhalt bleibt gleich)
+
+## [1.2.0] - 2026-01-23
+
+### ✨ Neu (Features)
+- **Persistentes Logging:** System-Logs werden nun in der SQLite-Datenbank (`system_logs`) gespeichert und gehen bei Neustarts nicht mehr verloren.
+- **Log Explorer:** Neuer Datepicker im "Logs"-Tab erlaubt das Abrufen historischer Protokolle.
+- **Lokalisierung:** Zeitstempel im UI verwenden nun das österreichische 24h-Format (`de-AT`).
+- **API:** Neuer Endpunkt `/api/logs?date=YYYY-MM-DD` zum Abrufen von Logdaten.
+
+### 🛠 Technik
+- **Datenbank:** Schema-Erweiterung um Tabelle `system_logs` mit Auto-Cleanup (Logs > 30 Tage werden gelöscht).
+- **Backend:** `sendLog` Helper schreibt nun synchron in DB und sendet WebSocket-Events.
+
+
+## [1.1.0] - 2026-01-23
+
+### ✨ Verbesserungen
+- **UDP Heartbeat:** Neuer Mechanismus, der alle 90 Sekunden (konfigurierbar) alle Werte an Loxone sendet, um "Offline"-Status zu verhindern.
+- **UI Feedback:** Sofortige Aktualisierung des Status im Webinterface nach Klick (keine Wartezeit mehr).
+- **Log System:** Kategorisierung der Logs (Input/Output/System) mit Filter-Tabs im UI.
+- **Mobile Design:** Optimiertes Layout für Smartphones (Sidebar ausgeblendet, Header fixiert).
+
+### 🐛 Bugfixes
+- **Loxone XML Export:** Formatierung der Einheiten korrigiert (`<v.1>`), damit Loxone Nachkommastellen korrekt anzeigt.
+- **Layout:** CSS-Fixes für den Header in der Desktop-Ansicht.
+
+## [1.0.0] - 2023-10-27
+
+### ✨ Neu (Features)
+- **Modern Dashboard:** Komplettes Redesign des Webinterfaces (Dark Mode, Glassmorphismus, Mobile-Responsive).
+- **Analytics Module:** Integration einer SQLite Datenbank (`history.db`) zur Speicherung von Sensorwerten.
+- **Charts:** Interaktive Diagramme für Vorlauf, Warmwasser, Innen- und Außentemperatur (Chart.js).
+- **Smart Filters:** Vergleichsansichten (Heute vs. Gestern, Monatsvergleich) im UI.
+- **MQTT Integration:** Vollständiger Support für MQTT (Lesen/Schreiben) zur Anbindung an Home Assistant/ioBroker.
+- **Loxone UDP Heartbeat:** Konfigurierbares Keep-Alive Intervall (Standard 90s), um Loxone-Werte aktuell zu halten.
+- **Auto-Discovery:** `scanner.js` Skript zum automatischen Finden der Daikin-Anlage im Netzwerk.
+- **Docker Support:** Offizielles `Dockerfile` und `docker-compose.yml` für einfache Installation.
+- **GHCR Integration:** Automatischer Build-Workflow für GitHub Container Registry.
+
+### 🛠 Technik & Fixes
+- **Backend:** Umstellung auf Node.js Event-basierte Architektur.
+- **Logic:** Automatische "Power On" Logik beim Wechseln des Modus (Heizen/Kühlen).
+- **Network:** Nutzung von `network_mode: host` im Docker Container für problemlose UDP-Kommunikation.
+- **Config:** Automatische Erstellung von XML-Vorlagen (`VIU` und `VO`) für den Loxone Import.
+
+### 📖 Dokumentation
+- Umfangreiches README mit Installationsanleitung für Docker und Node.js.
+- API Dokumentation im Webinterface integriert.

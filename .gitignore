@@ -1,0 +1,11 @@
+# Abhängigkeiten
+node_modules/
+
+# Lokale Konfiguration & Daten (WICHTIG: Nicht hochladen!)
+config.json
+history.db
+
+# Systemdateien
+.DS_Store
+Thumbs.db
+.vscode/
