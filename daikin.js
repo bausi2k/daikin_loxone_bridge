@@ -26,6 +26,9 @@ const POLL_PATHS = [
     "/[0]/MNAE/1/UnitStatus/EmergencyState/la"
 ];
 
+// WATCHDOG CONFIG: Nach 3 Minuten ohne Antwort wird neu verbunden
+const WATCHDOG_TIMEOUT = 3 * 60 * 1000; 
+
 class DaikinClient extends EventEmitter {
     constructor(config) {
         super();
@@ -33,6 +36,7 @@ class DaikinClient extends EventEmitter {
         this.ws = null;
         this.isConnected = false;
         this.state = {};
+        this.lastPacketTime = Date.now(); // Initiale Zeit
     }
 
     updateConfig(config) { this.ip = config.daikinIp; }
@@ -44,27 +48,50 @@ class DaikinClient extends EventEmitter {
     }
 
     connect() {
+        // Falls noch eine alte Verbindung hängt, aufräumen
+        if (this.ws) {
+            try { this.ws.terminate(); } catch(e) {}
+            this.ws = null;
+        }
+
         const url = `ws://${this.ip}/mca`;
         this.log(`Verbinde zu Daikin unter ${url}...`, 'system');
-        try { this.ws = new WebSocket(url); } catch (e) { this.log(`WS Fehler: ${e.message}`, 'error'); return; }
+        
+        try { 
+            this.ws = new WebSocket(url); 
+        } catch (e) { 
+            this.log(`WS Fehler: ${e.message}`, 'error'); 
+            this.scheduleReconnect();
+            return; 
+        }
 
         this.ws.on('open', () => { 
             this.log('Daikin: Verbunden!', 'success'); 
             this.isConnected = true; 
+            this.lastPacketTime = Date.now(); // Reset Watchdog
             this.startPolling(); 
         });
         
         this.ws.on('message', (data) => { 
+            this.lastPacketTime = Date.now(); // Lebenszeichen empfangen
             try { this.handleMessage(JSON.parse(data)); } catch (e) { console.error(e); } 
         });
         
         this.ws.on('close', () => { 
-            this.log('Verbindung getrennt. Reconnect in 5s...', 'warning'); 
+            if(this.isConnected) this.log('Verbindung getrennt.', 'warning');
             this.isConnected = false; 
-            setTimeout(() => this.connect(), 5000); 
+            this.scheduleReconnect();
         });
         
-        this.ws.on('error', (e) => this.log(`Error: ${e.message}`, 'error'));
+        this.ws.on('error', (e) => {
+            this.log(`Error: ${e.message}`, 'error');
+            this.ws.terminate(); // Force close triggert 'close' Event
+        });
+    }
+
+    scheduleReconnect() {
+        if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = setTimeout(() => this.connect(), 5000); 
     }
 
     handleMessage(json) {
@@ -102,7 +129,6 @@ class DaikinClient extends EventEmitter {
     }
 
     updateState(key, value) {
-        // Logik: Nur bei Änderung Events feuern, aber wir speichern alles
         const changed = this.state[key] !== value;
         this.state[key] = value;
         
@@ -110,12 +136,9 @@ class DaikinClient extends EventEmitter {
             this.log(`Update: ${key} = ${value}`, 'info');
             this.emit('update', { key, value });
         }
-        // Falls du auch unveränderte Werte im Log sehen willst, entferne den Kommentar:
-        // else { this.log(`(Keep) ${key}: ${value}`, 'system'); }
     }
 
     async executeCommand(cmd, val) {
-        // ... (Execute Command Logik bleibt gleich wie vorher) ...
         let path = "";
         let finalVal = val;
         let logCmd = cmd;
@@ -171,22 +194,34 @@ class DaikinClient extends EventEmitter {
             "m2m:rqp": { "op": 1, "to": path, "fr": "/S", "rqi": "set_" + Date.now(), "ty": 4,
                 "pc": { "m2m:cin": { "con": value, "cnf": "text/plain:0" } } }
         };
-        this.ws.send(JSON.stringify(payload));
+        try {
+            this.ws.send(JSON.stringify(payload));
+        } catch (e) {
+            this.log("Fehler beim Senden: " + e.message, "error");
+        }
     }
 
     startPolling() {
         this.pollAll();
         if (this.pollInterval) clearInterval(this.pollInterval);
-        this.pollInterval = setInterval(() => { if (this.isConnected) this.pollAll(); }, 60000);
+        this.pollInterval = setInterval(() => { this.pollAll(); }, 60000);
     }
 
     pollAll() {
+        // --- WATCHDOG CHECK ---
+        const silenceDuration = Date.now() - this.lastPacketTime;
+        if (silenceDuration > WATCHDOG_TIMEOUT) {
+            this.log(`WATCHDOG: Keine Daten seit ${Math.round(silenceDuration/1000)}s. Erzwinge Neustart!`, 'error');
+            this.ws.terminate(); // Kill Socket -> Close Event -> Reconnect
+            return;
+        }
+        // ----------------------
+
         if (!this.isConnected) {
-            this.log("Kann nicht aktualisieren: Keine Verbindung!", "error");
+            // Versuche es im nächsten Intervall wieder, Watchdog kümmert sich um den Rest
             return;
         }
         
-        // HIER ist die Änderung: Bestätigung im Log
         this.log(`Frage ${POLL_PATHS.length} Werte ab...`, 'system');
 
         let delay = 0;
@@ -199,7 +234,11 @@ class DaikinClient extends EventEmitter {
     sendRequest(path) {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
         const payload = { "m2m:rqp": { "op": 2, "to": path, "fr": "/S", "rqi": "req_" + Date.now().toString(36) } };
-        this.ws.send(JSON.stringify(payload));
+        try {
+            this.ws.send(JSON.stringify(payload));
+        } catch (e) {
+            console.error("Send Error", e);
+        }
     }
 }
 
