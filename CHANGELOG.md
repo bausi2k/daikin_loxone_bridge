@@ -2,6 +2,14 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.5.0] - 2026-02-26
+### ✨ Neu
+- **Dynamisches Polling:** Das Abfrage-Intervall der Daikin-Anlage kann nun im Setup-Tab frei konfiguriert werden (60 bis 900 Sekunden). Das schont die Hardware der Daikin-WLAN-Adapter bei Bedarf massiv.
+- **Smart Watchdog:** Der Verbindungs-Watchdog berechnet sein Timeout nun dynamisch basierend auf dem eingestellten Polling-Intervall (2,5-facher Wert, mindestens 3 Minuten) und startet blockierte Verbindungen automatisch neu.
+
+### 🛠 Technik
+- Das Datenbank-Logging bleibt fix bei 60 Sekunden, um die exakte Berechnung der Laufzeit-Statistiken weiterhin zu gewährleisten.
+
 ## [1.4.2] - 2026-02-16
 ### 🐛 Bugfix
 - **Verbindungs-Watchdog:** Ein neuer Watchdog überwacht den WebSocket-Datenstrom. Wenn länger als 3 Minuten keine Daten empfangen werden (z.B. durch "Zombie"-Verbindungen bei WLAN-Problemen), wird die Verbindung automatisch neu aufgebaut.

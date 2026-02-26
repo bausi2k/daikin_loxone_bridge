@@ -134,6 +134,10 @@
                 <div class="card">
                     <div class="card-title">Verbindungen</div>
                     <label>Daikin IP</label><input type="text" id="cfg-daikin" autocomplete="off">
+                    
+                    <label>Daikin Abfrage-Intervall (Sekunden, 60-900)</label>
+                    <input type="number" id="cfg-daikinPolling" placeholder="60" min="60" max="900">
+                    
                     <label>Loxone IP</label><input type="text" id="cfg-loxone" autocomplete="off">
                     <label>Loxone Port (UDP)</label><input type="number" id="cfg-port">
                     <label>Loxone UDP Keep-Alive (Sek)</label><input type="number" id="cfg-keepAlive" placeholder="90">

@@ -9,7 +9,6 @@ const mqtt = require('mqtt');
 const DaikinClient = require('./daikin'); 
 const db = require('./database'); 
 
-// 1. NEU: Package.json laden für Version
 const packageJson = require('./package.json'); 
 
 // --- CONFIG LADEN ---
@@ -20,6 +19,7 @@ let config = {
     loxonePort: 7888, 
     webPort: 8666, 
     udpKeepAlive: 90,
+    daikinPollingInterval: 60, // <--- NEUER WERT: Standard 60 Sekunden
     convertTextToNum: true,
     mqttBroker: "", mqttTopic: "daikin", mqttUser: "", mqttPass: ""
 };
@@ -112,6 +112,7 @@ function connectMqtt() {
 connectMqtt();
 
 // --- PERIODIC TASKS ---
+// WICHTIG: Das Logging für die DB MUSS auf 60000ms bleiben, damit SUM() bei Statistik funktioniert!
 setInterval(() => {
     if (!daikin.state.VLT) return;
     
@@ -248,7 +249,7 @@ app.get('/api/history', (req, res) => {
     else db.getHistory(mode, (data) => res.json(data));
 });
 
-// NEU: Route für flexible Stats
+// Route für flexible Stats
 app.get('/api/stats', (req, res) => {
     const mode = req.query.mode || '14d';
     db.getStats(mode, (data) => res.json(data));

@@ -18,7 +18,7 @@ function switchTab(name) {
     
     if(name === 'charts') {
         loadHistory();
-        loadStats(); // <--- Statistik laden
+        loadStats(); 
     }
     if(name === 'logs') fetchLogs(); 
 }
@@ -192,7 +192,6 @@ async function manualRefresh() {
     try { await fetch('/refresh', { method: 'POST' }); setTimeout(() => icons.forEach(i => i.classList.remove('spin')), 1000); } catch (e) { icons.forEach(i => i.classList.remove('spin')); }
 }
 
-// --- NEU: Flexible Statistik laden ---
 async function loadStats() {
     const mode = document.getElementById('statsFilter').value;
     try {
@@ -363,7 +362,6 @@ async function loadConfig() {
         const res = await fetch('/api/config');
         const cfg = await res.json();
         
-        // --- NEU: Version in alle Platzhalter schreiben mit 'v' ---
         if (cfg.appVersion) {
             document.querySelectorAll('.version-tag').forEach(el => {
                 el.innerText = 'v' + cfg.appVersion;
@@ -371,6 +369,10 @@ async function loadConfig() {
         }
         
         document.getElementById('cfg-daikin').value = cfg.daikinIp || "";
+        
+        // --- NEU: Lade Polling Interval in das UI ---
+        document.getElementById('cfg-daikinPolling').value = cfg.daikinPollingInterval || 60; 
+        
         document.getElementById('cfg-loxone').value = cfg.loxoneIp || "";
         document.getElementById('cfg-port').value = cfg.loxonePort || 7000;
         document.getElementById('cfg-keepAlive').value = cfg.udpKeepAlive || 90;
@@ -384,6 +386,10 @@ async function loadConfig() {
 async function saveConfig() {
     const newCfg = {
         daikinIp: document.getElementById('cfg-daikin').value,
+        
+        // --- NEU: Speichere Polling Interval aus dem UI ---
+        daikinPollingInterval: parseInt(document.getElementById('cfg-daikinPolling').value) || 60, 
+        
         loxoneIp: document.getElementById('cfg-loxone').value,
         loxonePort: parseInt(document.getElementById('cfg-port').value),
         udpKeepAlive: parseInt(document.getElementById('cfg-keepAlive').value),
