@@ -7,7 +7,6 @@ try {
     if (fs.existsSync('./config.json')) config = JSON.parse(fs.readFileSync('./config.json'));
 } catch (e) {}
 
-// Die Ordner, die wir durchwühlen wollen (basierend auf deinem Scan)
 const ROOTS = [
     "/[0]/MNAE/1/Sensor",
     "/[0]/MNAE/1/Consumption",
@@ -35,28 +34,26 @@ ws.on('open', async () => {
 async function exploreFolder(path) {
     console.log(`\n📂 Untersuche Ordner: ${path}`);
     
-    // 1. Hole den Inhalt des Ordners (ohne /la am Ende)
-    const folderData = await sendRequest(path);
+    // NEU: rcn=5 teilt Daikin mit, dass wir die "Children" (Unterordner) sehen wollen!
+    const folderData = await sendRequest(path, 5);
     
     if (!folderData || !folderData['m2m:cnt']) {
         console.log("   -> Kein lesbarer Container (oder leer).");
         return;
     }
 
-    // 2. Suche nach "Children" (Unterordnern/Datenpunkten)
-    const children = folderData['m2m:cnt'].ch; // Das ist eine Liste: [ { nm: "IndoorTemp", ... }, ... ]
+    const children = folderData['m2m:cnt'].ch; 
     
     if (!children || children.length === 0) {
         console.log("   -> Leer.");
         return;
     }
 
-    // 3. Für jedes gefundene Kind: Wert abfragen
     for (const child of children) {
-        const name = child.nm; // z.B. "IndoorTemperature"
-        const fullPath = `${path}/${name}/la`; // Wir bauen den Pfad zum "Latest" Wert
+        const name = child.nm; 
+        const fullPath = `${path}/${name}/la`; 
         
-        // Wert abrufen
+        // Hier holen wir den konkreten Wert (ohne rcn)
         const valueData = await sendRequest(fullPath);
         
         if (valueData && valueData['m2m:cin']) {
@@ -65,36 +62,37 @@ async function exploreFolder(path) {
             console.log(`     -> WERT: ${val}`);
             console.log(`     -> PFAD: ${fullPath}`);
         } else {
-            // Vielleicht ist es ein Unterordner? (z.B. Consumption/Power/...)
-            // Wir gehen aber nur 1 Ebene tief, sonst dauert es ewig.
             console.log(`   Found: [${name}] (Scheint ein Unterordner zu sein)`);
-            
-            // Optional: Einmal tiefer graben für Consumption
-            if (path.includes("Consumption")) {
+            // Gehe eine Ebene tiefer bei Bedarf
+            if (path.includes("Consumption") || path.includes("Operation")) {
                 await exploreFolder(`${path}/${name}`);
             }
         }
     }
 }
 
-function sendRequest(path) {
+function sendRequest(path, rcn = undefined) {
     return new Promise((resolve) => {
         const rqi = "crawl_" + Math.random().toString(36).substring(7);
         const payload = {
             "m2m:rqp": {
-                "op": 2, // Retrieve
+                "op": 2, 
                 "to": path,
                 "fr": "/S",
                 "rqi": rqi
             }
         };
 
+        // RCN anhängen, falls definiert
+        if (rcn !== undefined) {
+            payload["m2m:rqp"].rcn = rcn;
+        }
+
         const listener = (data) => {
             try {
                 const json = JSON.parse(data);
                 if (json['m2m:rsp'] && json['m2m:rsp'].rqi === rqi) {
                     ws.off('message', listener);
-                    // Wir geben den Inhalt (pc) zurück
                     resolve(json['m2m:rsp'].pc); 
                 }
             } catch (e) {}
@@ -103,7 +101,6 @@ function sendRequest(path) {
         ws.on('message', listener);
         ws.send(JSON.stringify(payload));
         
-        // Timeout
         setTimeout(() => {
             ws.off('message', listener);
             resolve(null);
