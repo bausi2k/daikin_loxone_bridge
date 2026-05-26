@@ -8,7 +8,7 @@ try {
     if (fs.existsSync('./config.json')) {
         config = JSON.parse(fs.readFileSync('./config.json'));
     }
-} catch (e) {}
+} catch (e) { }
 
 console.log(`Starte Scanner auf ${config.daikinIp}...`);
 
@@ -20,7 +20,7 @@ const CANDIDATES = [
     "/[0]/MNAE/1/Sensor/WaterPressureSensor/la",
     "/[0]/MNAE/1/Sensor/ReturnWaterTemperature/la",
     "/[0]/MNAE/1/Sensor/IndoorAmbientTemperature/la",
-    
+
     // Energieverbrauch (Oft vorhanden!)
     "/[0]/MNAE/1/Consumption/Power/Electrical/Heating/la",
     "/[0]/MNAE/1/Consumption/Power/Electrical/Cooling/la",
@@ -50,7 +50,7 @@ const ws = new WebSocket(`ws://${config.daikinIp}/mca`);
 
 ws.on('open', async () => {
     console.log("Verbunden! Starte Scan...");
-    
+
     // 1. Discovery Versuch (Ordner auflisten)
     console.log("\n--- PHASE 1: DISCOVERY (Ordner durchsuchen) ---");
     for (const path of DISCOVERY_ROOTS) {
@@ -71,7 +71,7 @@ function checkPath(path, isDiscovery) {
     return new Promise((resolve) => {
         // Request ID generieren
         const rqi = "scan_" + Math.random().toString(36).substring(7);
-        
+
         // Payload: Wir fragen nach den Kindern (rcn=1) bei Discovery
         // oder einfach nach dem Wert (Standard)
         const payload = {
@@ -88,13 +88,13 @@ function checkPath(path, isDiscovery) {
             try {
                 const json = JSON.parse(data);
                 const rsp = json['m2m:rsp'];
-                
+
                 if (rsp && rsp.rqi === rqi) {
                     ws.off('message', listener); // Listener entfernen
-                    
+
                     if (rsp.rsc === 2000) { // 2000 = OK
                         console.log(`[GEFUNDEN] ${path}`);
-                        
+
                         // Wenn wir Inhalt haben, zeigen wir ihn kurz
                         if (rsp.pc && rsp.pc['m2m:cin']) {
                             console.log(`   -> Wert: ${rsp.pc['m2m:cin'].con}`);
@@ -104,16 +104,16 @@ function checkPath(path, isDiscovery) {
                             console.log(`   -> Enthält: ${JSON.stringify(rsp.pc['m2m:cnt'].ch)}`);
                         }
                     } else {
-                        // console.log(`[---] ${path} (Code: ${rsp.rsc})`);
+                        console.log(`[---] ${path} (Code: ${rsp.rsc})`);
                     }
                     resolve();
                 }
-            } catch (e) {}
+            } catch (e) { }
         };
 
         ws.on('message', listener);
         ws.send(JSON.stringify(payload));
-        
+
         // Timeout, falls keine Antwort kommt
         setTimeout(() => {
             ws.off('message', listener);

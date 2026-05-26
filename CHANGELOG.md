@@ -2,6 +2,11 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.6.0] - 2026-05-26
+### ✨ Neu
+- **Sequentielle Befehlswarteschlange (Command Queue):** Befehle an die Daikin-Anlage werden jetzt in eine Warteschlange eingereiht und nacheinander mit einer Pause von 1000 ms verarbeitet. Dies verhindert zuverlässig, dass gleichzeitig gesendete HTTP-Requests (z. B. Warmwasser Standby und Raumheizung Ein) verschluckt werden.
+- **Eindeutige Request-IDs (rqi):** Request-IDs werden nun über einen kombinierten Zeitstempel- und Zähler-Ansatz generiert. Dies verhindert ID-Kollisionen bei gleichzeitigen API-Anfragen.
+
 ## [1.5.0] - 2026-02-26
 ### ✨ Neu
 - **Dynamisches Polling:** Das Abfrage-Intervall der Daikin-Anlage kann nun im Setup-Tab frei konfiguriert werden (60 bis 900 Sekunden). Das schont die Hardware der Daikin-WLAN-Adapter bei Bedarf massiv.

@@ -53,6 +53,15 @@ function updateMqttStatus(connected) {
     dots.forEach(d => connected ? d.classList.add('ok') : d.classList.remove('ok'));
 }
 
+function showToast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerText = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
 function updateDashboard(data) {
     currentState = data;
     setText('val-vlt', Math.round(data.VLT));
@@ -174,7 +183,12 @@ async function sendCmd(cmd, val) {
         if(currentState.Mode === 'cooling') current = parseFloat(currentState.Offset_Cool || 0);
         val = current + val;
     }
-    await fetch(`/set?cmd=${cmd}&val=${val}`);
+    try {
+        const res = await fetch(`/set?cmd=${cmd}&val=${val}`);
+        if (!res.ok) throw new Error(await res.text());
+    } catch(e) {
+        showToast("Fehler: " + e.message, "error");
+    }
 }
 
 async function setMode(mode) {
@@ -189,7 +203,15 @@ function toggleTurbo() { const isTurbo = parseInt(currentState.Powerful_WW || 0)
 async function manualRefresh() {
     const icons = document.querySelectorAll('.refresh-icon');
     icons.forEach(i => i.classList.add('spin'));
-    try { await fetch('/refresh', { method: 'POST' }); setTimeout(() => icons.forEach(i => i.classList.remove('spin')), 1000); } catch (e) { icons.forEach(i => i.classList.remove('spin')); }
+    try { 
+        const res = await fetch('/refresh', { method: 'POST' }); 
+        if (!res.ok) throw new Error("Refresh fehlgeschlagen");
+        showToast("Abfrage gestartet", "success");
+    } catch (e) { 
+        showToast(e.message, "error");
+    } finally {
+        setTimeout(() => icons.forEach(i => i.classList.remove('spin')), 1000);
+    }
 }
 
 async function loadStats() {
@@ -398,7 +420,16 @@ async function saveConfig() {
         mqttUser: document.getElementById('cfg-mqttUser').value,
         mqttPass: document.getElementById('cfg-mqttPass').value
     };
-    await fetch('/api/config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newCfg) });
-    alert("Gespeichert. Server startet neu.");
+    try {
+        const res = await fetch('/api/config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newCfg) });
+        const data = await res.json();
+        if (data.success) {
+            showToast("Einstellungen gespeichert", "success");
+        } else {
+            throw new Error(data.error || "Speichern fehlgeschlagen");
+        }
+    } catch (e) {
+        showToast("Fehler: " + e.message, "error");
+    }
 }
 loadConfig();
