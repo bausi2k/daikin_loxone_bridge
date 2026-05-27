@@ -181,7 +181,9 @@ app.get('/set', (req, res) => {
     return res.status(400).send('Invalid Command or Value');
   }
 
-  daikin.executeCommand(cmd, val);
+  daikin.executeCommand(cmd, val).catch((err) => {
+    sendLog(`Befehlsausführung fehlgeschlagen: ${err.message}`, 'error');
+  });
   sendLog(`${cmd} -> ${val}`, 'output');
 
   setTimeout(() => daikin.pollAll(), 1500);

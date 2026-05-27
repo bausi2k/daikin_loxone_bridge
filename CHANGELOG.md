@@ -2,6 +2,12 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.6.1] - 2026-05-27
+### 🐛 Bugfix
+- **Absturz-Schutz bei Verbindungsverlust (Unhandled Rejection):** Fehler bei der Befehlsausführung im API-Endpunkt `/set` werden nun ordnungsgemäß über ein `.catch()` abgefangen und protokolliert. Dies verhindert, dass der Docker-Container abstürzt, falls Befehle gesendet werden, während die Daikin-Wärmepumpe offline ist.
+- **Vermeidung überlappender Abfragen:** Ein Sperr-Flag verhindert zeitgleiche Polling-Prozesse. Zudem wird der Abfrage-Timer bei jedem Polling-Vorgang zurückgesetzt, um zu verhindern, dass unmittelbar nach manuellen Befehlen automatische Abfragen die Schnittstelle überlasten.
+- **Docker- & Git-Ignores:** Lokale Debug-Logs und CSV-Logs (`examples/`) wurden in `.gitignore` und der neu erstellten `.dockerignore` ausgeschlossen.
+
 ## [1.6.0] - 2026-05-26
 ### ✨ Neu
 - **Sequentielle Befehlswarteschlange (Command Queue):** Befehle an die Daikin-Anlage werden jetzt in eine Warteschlange eingereiht und nacheinander mit einer Pause von 1000 ms verarbeitet. Dies verhindert zuverlässig, dass gleichzeitig gesendete HTTP-Requests (z. B. Warmwasser Standby und Raumheizung Ein) verschluckt werden.

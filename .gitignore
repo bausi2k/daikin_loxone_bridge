@@ -9,3 +9,6 @@ history.db
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Beispieldateien / Lokale Logs
+examples/

@@ -39,6 +39,7 @@ class DaikinClient extends EventEmitter {
     this.commandQueue = [];
     this.isProcessingQueue = false;
     this.pendingRequests = new Map();
+    this.isPollingActive = false;
     this.updateConfig(config);
   }
 
@@ -344,15 +345,24 @@ class DaikinClient extends EventEmitter {
     });
   }
 
-  startPolling() {
-    this.pollAll();
+  resetPollInterval() {
     if (this.pollInterval) clearInterval(this.pollInterval);
     this.pollInterval = setInterval(() => {
       this.pollAll();
     }, this.pollingIntervalMs);
   }
 
+  startPolling() {
+    this.pollAll();
+    this.resetPollInterval();
+  }
+
   pollAll() {
+    if (this.isPollingActive) {
+      this.log('Abfrage bereits aktiv. Überspringe Überlappung.', 'system');
+      return;
+    }
+
     // --- WATCHDOG CHECK ---
     const silenceDuration = Date.now() - this.lastPacketTime;
     if (silenceDuration > this.watchdogTimeoutMs) {
@@ -366,11 +376,20 @@ class DaikinClient extends EventEmitter {
 
     if (!this.isConnected) return;
 
+    this.isPollingActive = true;
     this.log(`Frage Werte ab (Intervall: ${this.pollingIntervalMs / 1000}s)...`, 'system');
 
+    // Reset periodic timer so the next interval starts *after* this poll run
+    this.resetPollInterval();
+
     let delay = 0;
-    POLL_PATHS.forEach((path) => {
-      setTimeout(() => this.sendRequest(path), delay);
+    POLL_PATHS.forEach((path, idx) => {
+      setTimeout(() => {
+        this.sendRequest(path);
+        if (idx === POLL_PATHS.length - 1) {
+          this.isPollingActive = false;
+        }
+      }, delay);
       delay += 200;
     });
   }

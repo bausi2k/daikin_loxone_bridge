@@ -1,0 +1,7 @@
+node_modules/
+config.json
+history.db
+examples/
+.git/
+.vscode/
+.DS_Store
