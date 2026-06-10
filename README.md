@@ -128,3 +128,7 @@ Die `config.json` speichert Passwörter (für MQTT) im Klartext. Die `history.db
 ---
 
 **Lizenz:** MIT
+
+---
+
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/bausi2k)

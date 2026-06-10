@@ -94,11 +94,27 @@ daikin.on('update', (data) => {
   sendLog(`${data.key}: ${data.value}`, 'input');
 
   if (data.key === 'Power_Heating' || data.key === 'Mode') {
-    const loxoneMode = getLoxoneMode();
-    loxone.sendRaw(`WP_Mode: ${loxoneMode}`);
-    mqtt.publish('Mode_Int', loxoneMode);
+    triggerLoxoneModeUpdate();
   }
 });
+
+let modeUpdateTimer = null;
+let lastSentLoxoneMode = null;
+
+function triggerLoxoneModeUpdate() {
+  if (modeUpdateTimer) return;
+  
+  // Use setImmediate or a 10ms timeout to coalesce multiple state changes in the same tick
+  modeUpdateTimer = setTimeout(() => {
+    modeUpdateTimer = null;
+    const loxoneMode = getLoxoneMode();
+    if (loxoneMode !== lastSentLoxoneMode) {
+      lastSentLoxoneMode = loxoneMode;
+      loxone.sendRaw(`WP_Mode: ${loxoneMode}`);
+      mqtt.publish('Mode_Int', loxoneMode);
+    }
+  }, 10);
+}
 
 mqtt.on('status', (connected) => {
   broadcastToUI('mqtt_status', { connected });
