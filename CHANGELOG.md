@@ -2,6 +2,13 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.6.2] - 2026-06-10
+### 🐛 Bugfix
+- **WP_Mode Signal-Konsolidierung (Debouncing):** Schnelle, aufeinanderfolgende Statusänderungen von `Power_Heating` und `Mode` werden nun für 10 ms gebündelt, bevor ein UDP-Paket oder ein MQTT-Event ausgelöst wird. Dies verhindert das Senden von widersprüchlichen Zwischenzuständen (z.B. Wechsel von `2` auf `0` in derselben Sekunde).
+- **Strikte Modus-Prüfung:** Der übermittelte Kombi-Modus (`WP_Mode`) wird jetzt noch zuverlässiger an den aktiven Status der Wärmepumpe (`Power_Heating === 'on'`) gekoppelt, um sicherzustellen, dass im Standby immer der Wert `0` übertragen wird.
+
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/bausi2k)
+
 ## [1.6.1] - 2026-05-27
 ### 🐛 Bugfix
 - **Absturz-Schutz bei Verbindungsverlust (Unhandled Rejection):** Fehler bei der Befehlsausführung im API-Endpunkt `/set` werden nun ordnungsgemäß über ein `.catch()` abgefangen und protokolliert. Dies verhindert, dass der Docker-Container abstürzt, falls Befehle gesendet werden, während die Daikin-Wärmepumpe offline ist.

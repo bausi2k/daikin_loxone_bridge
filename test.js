@@ -97,6 +97,76 @@ async function runTests() {
     console.error('❌ Daikin Command Queue Test failed', e);
   }
 
+  // 4c. WP_Mode Debouncing and Update Tests
+  try {
+    console.log('\n[TEST] WP_Mode Debouncing...');
+    // We will simulate the behavior of the server.js event handler logic
+    const loxoneRawSends = [];
+    const mockLoxone = {
+      sendRaw: (msg) => loxoneRawSends.push(msg)
+    };
+    
+    // Local state variables mimicking server.js variables
+    let localDaikinState = { Power_Heating: 'standby', Mode: 'heating' };
+    
+    function testGetLoxoneMode(state) {
+      const power = state.Power_Heating;
+      const mode = state.Mode;
+      if (power === 'on') {
+        if (mode === 'heating') return 1;
+        if (mode === 'cooling') return 2;
+        if (mode === 'auto') return 3;
+      }
+      return 0;
+    }
+
+    let testModeUpdateTimer = null;
+    let testLastSentLoxoneMode = null;
+
+    function triggerTestModeUpdate() {
+      if (testModeUpdateTimer) return;
+      testModeUpdateTimer = setTimeout(() => {
+        testModeUpdateTimer = null;
+        const loxoneMode = testGetLoxoneMode(localDaikinState);
+        if (loxoneMode !== testLastSentLoxoneMode) {
+          testLastSentLoxoneMode = loxoneMode;
+          mockLoxone.sendRaw(`WP_Mode: ${loxoneMode}`);
+        }
+      }, 10);
+    }
+
+    // Scenario 1: Power goes ON, Mode is cooling -> updates happen almost at the same time
+    localDaikinState.Power_Heating = 'on';
+    triggerTestModeUpdate();
+    
+    localDaikinState.Mode = 'cooling';
+    triggerTestModeUpdate();
+
+    // Wait 20ms for the debounce timer to fire
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    if (loxoneRawSends.length === 1 && loxoneRawSends[0] === 'WP_Mode: 2') {
+      console.log('✅ WP_Mode: Successfully debounced simultaneous updates to a single send (WP_Mode: 2)');
+    } else {
+      console.error('❌ WP_Mode: Expected exactly 1 send ("WP_Mode: 2"), got:', loxoneRawSends);
+    }
+
+    // Scenario 2: Power goes back to standby (should return 0)
+    localDaikinState.Power_Heating = 'standby';
+    triggerTestModeUpdate();
+
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    if (loxoneRawSends.length === 2 && loxoneRawSends[1] === 'WP_Mode: 0') {
+      console.log('✅ WP_Mode: Successfully set to 0 when Power_Heating is standby');
+    } else {
+      console.error('❌ WP_Mode: Expected second send to be "WP_Mode: 0", got:', loxoneRawSends);
+    }
+
+  } catch (e) {
+    console.error('❌ WP_Mode Debouncing Test failed', e);
+  }
+
   // 5. Validator Tests
   try {
     console.log('\n[TEST] Validator...');
