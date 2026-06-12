@@ -23,6 +23,23 @@ async function runTests() {
     console.log('\n[TEST] MQTT Manager...');
     const mqtt = new MqttManager({ mqttBroker: '', mqttTopic: 'test' });
     if (!mqtt.isConnected()) console.log('✅ MQTT: Correctly handles empty broker');
+    
+    // Simulate error event listener registration
+    let errorHandled = false;
+    mqtt.on('error', (err) => {
+      if (err.message === 'Test error') {
+        errorHandled = true;
+      }
+    });
+    
+    // Emit dummy error to confirm listener works
+    mqtt.emit('error', new Error('Test error'));
+    if (errorHandled) {
+      console.log('✅ MQTT: Error event caught successfully');
+    } else {
+      console.error('❌ MQTT: Error event was not caught!');
+    }
+    
     mqtt.close();
   } catch (e) { console.error('❌ MQTT Test failed', e); }
 

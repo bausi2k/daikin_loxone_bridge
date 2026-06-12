@@ -120,6 +120,10 @@ mqtt.on('status', (connected) => {
   broadcastToUI('mqtt_status', { connected });
 });
 
+mqtt.on('error', (err) => {
+  sendLog(`MQTT-Fehler: ${err.message}`, 'error');
+});
+
 mqtt.on('log', (msg, type) => sendLog(msg, type));
 
 mqtt.on('message', (topic, message) => {

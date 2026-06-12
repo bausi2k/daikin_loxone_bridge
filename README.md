@@ -12,9 +12,9 @@ Eine moderne, leichtgewichtige Bridge, um **Daikin Altherma 3 Wärmepumpen** (ge
 * 📊 **Analytics Dashboard:** Integrierte Datenbank (SQLite) mit Diagrammen.
 * 📜 **System Logging:** Persistente Logs mit Historie und Suchfunktion (Datepicker) direkt im UI.
 * 📱 **Modernes UI:** Responsive "Google Home"-Style Webinterface mit Dark Mode.
-* ⚡ **MQTT Support:** Volle Integration für Home Assistant, ioBroker, etc.
+* ⚡ **MQTT Support:** Volle Integration für Home Assistant, ioBroker, etc. (inkl. Absturzschutz und kontrolliertem Reconnect-Verhalten).
 * 🛠 **Auto-Config:** Generiert fertige XML-Vorlagen für den Loxone-Import.
-* 🛡️ **Robustheit:** Sequentielle Befehlswarteschlange (Command Queue) mit 1s Cooldown, eindeutige Request-IDs, Schutz vor überlappenden Sensorabfragen (Polling-Überlastungsschutz) und Fehler-Catching zur Vermeidung von Container-Abstürzen bei Offline-Geräten.
+* 🛡️ **Robustheit:** Sequentielle Befehlswarteschlange (Command Queue) mit 1s Cooldown, eindeutige Request-IDs, Schutz vor überlappenden Sensorabfragen (Polling-Überlastungsschutz), kontrolliertes MQTT-Verhalten und umfassendes Fehler-Catching zur Vermeidung von Container-Abstürzen bei Offline-Geräten.
 
 ---
 
