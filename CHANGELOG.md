@@ -2,6 +2,12 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.6.4] - 2026-06-12
+### ✨ Neu
+- **Automatisierte GitHub-Releases:** Der CI/CD-Workflow (`docker-publish.yml`) wurde erweitert. Sobald ein neues Versionstag (z. B. `v1.6.4`) gepusht wird, generiert GitHub Actions nun vollautomatisch ein offizielles GitHub-Release mit den zugehörigen Release-Notes und Source-Code-Archiven.
+
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/bausi2k)
+
 ## [1.6.3] - 2026-06-12
 ### 🐛 Bugfix
 - **MQTT Fehlerbehandlung (Crash Prevention):** Ein Fehler-Event-Listener (`error`) wurde in `server.js` auf dem MQTT-Manager registriert. Dies verhindert unkontrollierte Anwendungsabstürze, falls der konfigurierte MQTT-Broker nicht erreichbar ist oder die Verbindung fehlschlägt.
