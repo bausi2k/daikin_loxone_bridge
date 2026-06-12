@@ -15,6 +15,7 @@ Eine moderne, leichtgewichtige Bridge, um **Daikin Altherma 3 Wärmepumpen** (ge
 * ⚡ **MQTT Support:** Volle Integration für Home Assistant, ioBroker, etc. (inkl. Absturzschutz und kontrolliertem Reconnect-Verhalten).
 * 🛠 **Auto-Config:** Generiert fertige XML-Vorlagen für den Loxone-Import.
 * 🛡️ **Robustheit:** Sequentielle Befehlswarteschlange (Command Queue) mit 1s Cooldown, eindeutige Request-IDs, Schutz vor überlappenden Sensorabfragen (Polling-Überlastungsschutz), kontrolliertes MQTT-Verhalten und umfassendes Fehler-Catching zur Vermeidung von Container-Abstürzen bei Offline-Geräten.
+* 📦 **CI/CD:** Automatisiertes Erstellen von Docker-Images (GitHub Container Registry) und echten GitHub Releases beim Pushen von Versionstags.
 
 ---
 
