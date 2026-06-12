@@ -27,7 +27,9 @@ class MqttManager extends EventEmitter {
     }
 
     console.log(`[MQTT] Verbinde zu ${this.config.mqttBroker}...`);
-    const options = {};
+    const options = {
+      reconnectPeriod: 5000 // Retry every 5 seconds instead of spamming quickly
+    };
     if (this.config.mqttUser) {
       options.username = this.config.mqttUser;
       options.password = this.config.mqttPass;

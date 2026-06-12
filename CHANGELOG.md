@@ -2,6 +2,13 @@
 
 Alle nennenswerten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
+## [1.6.3] - 2026-06-12
+### 🐛 Bugfix
+- **MQTT Fehlerbehandlung (Crash Prevention):** Ein Fehler-Event-Listener (`error`) wurde in `server.js` auf dem MQTT-Manager registriert. Dies verhindert unkontrollierte Anwendungsabstürze, falls der konfigurierte MQTT-Broker nicht erreichbar ist oder die Verbindung fehlschlägt.
+- **Optimiertes Reconnect-Verhalten:** Der Reconnect-Zeitraum wurde auf 5 Sekunden festgelegt, um unnötigen Log-Spam und übermäßige CPU-Belastung bei Verbindungsstörungen zu vermeiden.
+
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/bausi2k)
+
 ## [1.6.2] - 2026-06-10
 ### 🐛 Bugfix
 - **WP_Mode Signal-Konsolidierung (Debouncing):** Schnelle, aufeinanderfolgende Statusänderungen von `Power_Heating` und `Mode` werden nun für 10 ms gebündelt, bevor ein UDP-Paket oder ein MQTT-Event ausgelöst wird. Dies verhindert das Senden von widersprüchlichen Zwischenzuständen (z.B. Wechsel von `2` auf `0` in derselben Sekunde).
