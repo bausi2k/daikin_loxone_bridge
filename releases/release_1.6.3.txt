@@ -1,0 +1,10 @@
+Commit Hash: 9f804d6024c78b972aa6dd294e1d11bbcad99690
+Author: Herr Klaus <bausi2k@gmail.com>
+Date: Fri Jun 12 07:42:30 2026 +0200
+Branch: bugfix/mqtt-error-handling
+
+Summary of changes:
+- Registered 'error' event handler on the MQTT client instance inside server.js to log errors and avoid application crashes on connection loss.
+- Configured a 5-second connection backoff interval (reconnectPeriod) on the MQTT client options to prevent heavy CPU and log overload.
+- Added simulation and verification tests in test.js.
+- Bumped app version to v1.6.3 and documented changes in CHANGELOG.md and README.md.

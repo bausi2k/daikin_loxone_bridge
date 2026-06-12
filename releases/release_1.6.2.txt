@@ -1,0 +1,11 @@
+Commit Hash: 9a292f8b5604d135c26dfc8fe56630f60d324797
+Author: Herr Klaus <bausi2k@gmail.com>
+Date: Wed Jun 10 09:14:08 2026 +0200
+Branch: feature/wp-mode-optimization
+
+Summary of changes:
+- Coalesced multiple quick status updates of Power_Heating and Mode using a 10ms debounce in server.js.
+- Cleanly linked WP_Mode calculation to Power_Heating (Power_Heating must be 'on', otherwise 0).
+- Created a robust unit-test in test.js to simulate and verify WP_Mode debouncing.
+- Upgraded app version in package.json to v1.6.2.
+- Updated CHANGELOG.md and README.md (added Buy Me A Coffee badges).

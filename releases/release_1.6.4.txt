@@ -1,0 +1,10 @@
+Commit Hash: 3ba3f73e15016254d6ffff54a041f97fe35afd4d
+Author: Herr Klaus <bausi2k@gmail.com>
+Date: Fri Jun 12 07:56:33 2026 +0200
+Branch: feature/github-releases-workflow
+
+Summary of changes:
+- Enabled 'contents: write' permission in .github/workflows/docker-publish.yml build job.
+- Appended 'Create GitHub Release' step to docker-publish.yml utilizing 'softprops/action-gh-release@v1'.
+- Bumped app version in package.json to v1.6.4.
+- Documented feature update in CHANGELOG.md and README.md.
